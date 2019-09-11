@@ -4,7 +4,6 @@ from django.views.generic import View
 
 # Create your views here.
 
-
 class LoginFormView(View):
     form_class = LoginForm
     template_name = 'login/login_form.html'
@@ -17,10 +16,8 @@ class LoginFormView(View):
     # process form data
     def post(self, request):
         form = self.form_class(request.POST)
-
         if form.is_valid():
             pass
-
         return render(request, self.template_name, {'form': form})
 
 class RegistrationFormView(View):
