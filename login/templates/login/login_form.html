@@ -18,6 +18,16 @@
 				<a href="{% url 'login:register' %}">Register here</a>
 			</div>
 			{% include 'login/form-template.html' %}
+			<div class="col-xs-offset-2 col-xs-10" style="padding: 10px">
+				<div class="form-check">
+					<input type="radio" class="form-check-input" id="materialUnchecked" name="radio_btn" value = "1" required>
+					<label class="form-check-label" for="materialUnchecked">Casual User</label>
+					<input type="radio" class="form-check-input" id="materialUnchecked" name="radio_btn" value = "2">
+					<label class="form-check-label" for="materialUnchecked">Premium User</label>
+					<input type="radio" class="form-check-input" id="materialUnchecked" name="radio_btn" value = "3">
+					<label class="form-check-label" for="materialUnchecked">Commercial User</label>
+				</div>
+			</div>
 			<div class="form-group">
 				<div class="col-sm-offset-2 col-sm-1">
 					<a href="{% url 'login:password_reset' %}">Forgot password?</a>

@@ -36,7 +36,29 @@ from .forms import LoginForm, RequestpwdForm, ResetpwdForm, RegistrationForm, Pa
 
 from .models import User
 
+from casual_user.models import CasualUser
+
 UserModel = get_user_model()
+
+def createNewUser(email, password, first_name, last_name, u_type):
+    username = email.split('@')[0]
+
+    # check for unique username
+    similar_users = len(User.objects.filter(username=username))
+
+    if similar_users != 0:
+        new_username = username + '_' + str(similar_users)
+        i = 0
+        while len(User.objects.filter(username=new_username)) != 0:
+            i += 1
+            new_username = username + '_' + str(similar_users + i)
+        username = new_username
+
+    new_user = User(username=username, email=email, first_name=first_name, last_name=last_name, user_type = u_type)
+    new_user.set_password(password)
+    new_user.save()
+
+    return new_user, username
 
 class LoginFormView(View):
     form_class = LoginForm
@@ -51,9 +73,31 @@ class LoginFormView(View):
     def post(self, request):
         form = self.form_class(request.POST)
 
-        if form.is_valid():
-            pass
+        radio_btn = request.POST.get('radio_btn')
 
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+
+            # returns user objects if credentials are correct
+
+            user = authenticate(username=username, password=password)
+
+            if user is not None:
+
+                if user.is_active and int(radio_btn) == user.user_type:
+                    login(request, user)
+                    # redirect to respective page
+                    if radio_btn == '1':
+                        return redirect('casual_user:homepage')
+                    elif radio_btn == '2':
+                        return redirect('')
+                    else:
+                        return redirect('')
+                else:
+                    form.add_error('username', "User does not exist.")
+            else:
+                form.add_error('username', "User credentials did not match existing records.")
         return render(request, self.template_name, {'form': form})
 
 class RegistrationFormView(View):
@@ -67,10 +111,30 @@ class RegistrationFormView(View):
 
     #put data inside blank text fields 
     def post(self, request):
+        current_user = request.user
         form = self.form_class(request.POST)
         
         if form.is_valid():
-            pass
+            account_type = form.cleaned_data['account_type']
+
+            first_name = form.cleaned_data['first_name']
+            last_name = form.cleaned_data['last_name']
+            date_of_birth = form.cleaned_data['date_of_birth']
+            gender = form.cleaned_data['gender']
+            phone = form.cleaned_data['phone']
+            email = form.cleaned_data['email']
+            password = form.cleaned_data['password']
+
+            new_user, username = createNewUser(email, password, first_name, last_name, int(account_type))
+
+            if account_type == '1':
+                c_user = CasualUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email)
+                c_user.save()
+                return render(request, 'login/registrationsuccess.html', {'username': username})
+            elif account_type == '2':
+                return render(request, 'login/registrationsuccess.html', {'username': username})
+            else:
+                return render(request, 'login/registrationsuccess.html', {'username': username})
 
         return render(request, self.template_name, {'form': form})
 

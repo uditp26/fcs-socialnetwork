@@ -28,7 +28,7 @@ from phonenumber_field.formfields import PhoneNumberField
 UserModel = get_user_model()
 
 class LoginForm(forms.Form):
-	username = forms.CharField(max_length=50)
+	username = forms.CharField()
 	password = forms.CharField(widget=forms.PasswordInput)
 
 	class Meta:
