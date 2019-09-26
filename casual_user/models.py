@@ -5,6 +5,9 @@ from django.contrib.postgres.fields import ArrayField
 from datetime import datetime
 
 
+#import array list 
+from django.contrib.postgres.fields import ArrayField
+
 class CasualUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     date_of_birth = models.DateField()
