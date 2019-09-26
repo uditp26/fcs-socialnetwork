@@ -6,4 +6,5 @@ app_name = 'casual_user'
 
 urlpatterns = [
     url(r'^$', views.HomepageView.as_view(), name='homepage'),
+    url(r'^myprofile$', views.ProfileView.as_view(), name='myprofile'),
 ]
