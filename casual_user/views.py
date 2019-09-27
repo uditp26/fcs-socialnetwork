@@ -38,27 +38,35 @@ def findfriend(request):
         q = request.GET['q']
     return q
 
+#function that return search user/users list, friend_list and current user friend object
+def user_friendlist(current_user, request):
+    username1 = current_user.username
+    try:
+        have_friend = Friend.objects.get(username = username1)
+        current_user_friendlist  = list(have_friend.friend_list)
+
+    except:
+        have_friend = Friend()
+        have_friend.username = username1
+        current_user_friendlist = []
+        have_friend.friend_list = current_user_friendlist
+
+    search_name = findfriend(request).lower()
+    print("search name : ", search_name)
+
+    user_name_list = User.objects.filter(first_name = search_name)
+    user_name_list = user_name_list.exclude(username = current_user.username)
+
+    return user_name_list, current_user_friendlist, have_friend
+
 
 class ListUserView(View):
     template_name = 'casual_user/list_user.html'
     
     def get(self, request):
         current_user = request.user
-        username1 = current_user.username
+        user_name_list, current_user_friendlist, have_friend = user_friendlist(current_user, request)
         
-        try:
-            have_friend = Friend.objects.get(username = username1)
-            current_user_friendlist  = list(have_friend.friend_list)
-
-        except:
-            current_user_friendlist = []
-
-        search_name = findfriend(request).lower()
-        print("search name : ", search_name)
-
-        user_name_list = User.objects.filter(first_name = search_name)
-        user_name_list = user_name_list.exclude(username = current_user.username)
-
         bundle = dict()
         for user in user_name_list:
             if user.username in current_user_friendlist:
@@ -69,60 +77,54 @@ class ListUserView(View):
         return render(request, self.template_name, {'bundle': bundle})
 
     def post(self, request):
-
         current_user = request.user
-
-        username1 = current_user.username
-        
-        try:
-            have_friend = Friend.objects.get(username = username1)
-            current_user_friendlist  = list(have_friend.friend_list)
-
-        except:
-            have_friend = Friend()
-            have_friend.username = username1
-            current_user_friendlist = []
-            have_friend.friend_list = current_user_friendlist
-        
-        search_name = findfriend(request).lower()
-        user_name_list = User.objects.filter(first_name = search_name)
-        user_name_list = user_name_list.exclude(username = current_user.username)
+    
+        user_name_list, current_user_friendlist, have_friend = user_friendlist(current_user, request)
 
         print("Old_friend_list = ", current_user_friendlist)
 
         for i in user_name_list:
             print(request.POST.dict())
             try:
-                if request.POST.dict()[i.username] == "Add Friend":
-                    print("selected_button", i.username)
+                selected_user = i.username
+                if request.POST.dict()[selected_user] == "Add Friend":
+                    print("selected_button", selected_user)
                     
-                    have_friend.friend_list.append(i.username)
+                    have_friend.friend_list.append(selected_user)
                     have_friend.save()
 
+                    #for implementation of bi-direction add_friend
+                    try:
+                        b_user_friendlist = Friend.objects.get(username = selected_user)
+                        b_user_friendlist.friend_list.append(current_user.username)
+                        b_user_friendlist.save()
+                        print("b_user_friendlist = ", b_user_friendlist.friend_list)
+                    except:
+                        b_user_friendlist = Friend()
+                        b_user_friendlist.username = selected_user
+                        current_user_friendlist = []
+                        b_user_friendlist.friend_list = current_user_friendlist
+                        b_user_friendlist.friend_list.append(current_user.username)
+                        b_user_friendlist.save()
+                        print("b_user_friendlist = ", b_user_friendlist.friend_list)
                     break
-                elif request.POST.dict()[i.username] == "Unfriend":
-                    print("selected_button", i.username)
 
-                    have_friend.friend_list.remove(i.username)
+                elif request.POST.dict()[selected_user] == "Unfriend":
+                    print("selected_button", selected_user)
+
+                    have_friend.friend_list.remove(selected_user)
                     have_friend.save()
+
+                    #for implementation of bi-direction remove_friend
+                    b_user_friendlist = Friend.objects.get(username = selected_user)
+                    b_user_friendlist.friend_list.remove(current_user.username)
+                    b_user_friendlist.save()
 
                     break
             except:
                 pass
             
-        try:
-            have_friend = Friend.objects.get(username = username1)
-            current_user_friendlist  = list(have_friend.friend_list)
-
-        except:
-            have_friend = Friend()
-            have_friend.username = username1
-            current_user_friendlist = []
-            have_friend.friend_list = current_user_friendlist
-        
-        search_name = findfriend(request).lower()
-        user_name_list = User.objects.filter(first_name = search_name)
-        user_name_list = user_name_list.exclude(username = current_user.username)
+        user_name_list, current_user_friendlist, have_friend = user_friendlist(current_user, request)
 
         print("updated_friend_list = ", current_user_friendlist)
         bundle = dict()
@@ -153,3 +155,45 @@ class FriendView(View):
         current_user = dict()
         current_user[username1] = current_user_friendlist
         return render(request, self.template_name, {'current_user': current_user})
+
+    def post(self, request):
+        current_user = request.user
+        username1 = current_user.username
+
+        try:
+            have_friend = Friend.objects.get(username = username1)
+            current_user_friendlist  = list(have_friend.friend_list)
+
+        except:
+            current_user_friendlist = []
+            
+        for i in current_user_friendlist:
+            print(request.POST.dict())
+            try:
+                selected_user = i
+                
+                if request.POST.dict()[selected_user] == "Unfriend":
+                    have_friend.friend_list.remove(selected_user)
+                    have_friend.save()
+
+                    #for implementation of bi-direction remove_friend
+                    b_user_friendlist = Friend.objects.get(username = selected_user)
+                    b_user_friendlist.friend_list.remove(current_user.username)
+                    b_user_friendlist.save()
+
+                    break
+            except:
+                pass
+
+        try:
+            have_friend = Friend.objects.get(username = username1)
+            current_user_friendlist  = list(have_friend.friend_list)
+
+        except:
+            current_user_friendlist = []
+            
+        current_user = dict()
+        current_user[username1] = current_user_friendlist
+
+        return render(request, self.template_name, {'current_user': current_user})
+
