@@ -117,8 +117,8 @@ class RegistrationFormView(View):
         if form.is_valid():
             account_type = form.cleaned_data['account_type']
 
-            first_name = form.cleaned_data['first_name'].lower()
-            last_name = form.cleaned_data['last_name'].lower()
+            first_name = form.cleaned_data['first_name']
+            last_name = form.cleaned_data['last_name']
             date_of_birth = form.cleaned_data['date_of_birth']
             gender = form.cleaned_data['gender']
             phone = form.cleaned_data['phone']

@@ -10,7 +10,6 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
 from django import forms
 
-
 from datetime import datetime
 
 def savePost(self, request, current_user):
@@ -103,7 +102,6 @@ class ProfileView(View):
             bundle = {'name': name, 'date_of_birth': casual_user.date_of_birth, 'gender': casual_user.gender,'phone': casual_user.phone}
             return render(request, self.template_name, {'current_user':bundle})
 
-
 class LogoutView(View):
     template_name = 'login/login.html'
     def get(self, request):
@@ -130,9 +128,11 @@ def user_friendlist(current_user, request):
         have_friend.friend_list = current_user_friendlist
 
     search_name = findfriend(request).lower()
+
     print("search name : ", search_name)
 
-    user_name_list = User.objects.filter(first_name = search_name)
+    user_name_list = User.objects.filter(first_name__icontains = search_name)
+
     user_name_list = user_name_list.exclude(username = current_user.username)
 
     return user_name_list, current_user_friendlist, have_friend
@@ -214,6 +214,14 @@ class ListUserView(View):
 
         return render(request, self.template_name, {'bundle': bundle})
 
+def showfrndlist(username1):
+    try:
+        have_friend = Friend.objects.get(username=username1)
+        current_user_friendlist = list(have_friend.friend_list)
+    except:
+        current_user_friendlist = []
+
+    return have_friend, current_user_friendlist
 
 #for display friendlist
 class FriendView(View):
@@ -238,13 +246,8 @@ class FriendView(View):
         current_user = request.user
         username1 = current_user.username
 
-        try:
-            have_friend = Friend.objects.get(username = username1)
-            current_user_friendlist  = list(have_friend.friend_list)
+        have_friend, current_user_friendlist = showfrndlist(username1)
 
-        except:
-            current_user_friendlist = []
-            
         for i in current_user_friendlist:
             print(request.POST.dict())
             try:
@@ -263,15 +266,13 @@ class FriendView(View):
             except:
                 pass
 
-        try:
-            have_friend = Friend.objects.get(username = username1)
-            current_user_friendlist  = list(have_friend.friend_list)
-
-        except:
-            current_user_friendlist = []
+        have_friend, current_user_friendlist = showfrndlist(username1)
             
         current_user = dict()
         current_user[username1] = current_user_friendlist
 
         return render(request, self.template_name, {'current_user': current_user})
+
+
+
 
