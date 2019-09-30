@@ -1,6 +1,12 @@
 from django.db import models
 from login.models import User
 from phonenumber_field.modelfields import PhoneNumberField
+from django.contrib.postgres.fields import ArrayField
+from datetime import datetime
+
+
+#import array list 
+from django.contrib.postgres.fields import ArrayField
 
 class CasualUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -11,3 +17,20 @@ class CasualUser(models.Model):
 
     def __str__(self):
         return self.email
+
+class Post(models.Model):
+    username = models.CharField(max_length=30)
+    private_posts = ArrayField(models.CharField(max_length=500))
+    friends_posts = ArrayField(models.CharField(max_length=500))
+    prv_timestamp = ArrayField(models.DateTimeField())
+    frnd_timestamp = ArrayField(models.DateTimeField())
+
+    def __str__(self):
+        return self.username
+
+class Friend(models.Model):
+    username = models.CharField(max_length = 30)
+    friend_list = ArrayField(models.CharField(max_length=50, blank=True))
+    
+    def __str__(self):
+        return self.username
