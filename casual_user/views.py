@@ -5,6 +5,7 @@ from django.http import Http404
 from .models import CasualUser, Post, Friend
 from login.models import User
 
+from .forms import EditProfileForm
 from django.contrib.auth import logout
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
@@ -69,6 +70,16 @@ def genBundle(current_user):
 
     bundle = {'name': name, 'posts':all_posts}
     return bundle
+
+def updateExistingUser(curr_user, first_name, last_name, gender, phone):
+    
+    curr_user.first_name = first_name
+    curr_user.last_name = last_name
+    curr_user.save()
+    curr_user = CasualUser.objects.get(user=curr_user)
+    curr_user.gender = gender
+    curr_user.phone = phone
+    curr_user.save()
 
 class HomepageView(View):
     template_name = 'casual_user/homepage.html'
@@ -274,5 +285,74 @@ class FriendView(View):
         return render(request, self.template_name, {'current_user': current_user})
 
 
+class EditProfileView(View):
+    template_name = 'casual_user/editprofile.html'
+    
+    def get(self, request):
+        current_user = request.user
+        print(type(current_user))
+        if str(current_user) is 'AnonymousUser':
+            raise Http404
+        else:
+            casual_user = CasualUser.objects.get(user=current_user)
+            bundle = dict()
+            #name = casual_user.user.first_name + ' ' +  casual_user.user.last_name
+            fname = casual_user.user.first_name
+            lname = casual_user.user.last_name
+            gender = casual_user.gender
+            if gender==1:
+                gender = str("Male")
+            elif gender==2:
+                gender = str("Female")
+            elif gender==3:
+                gender = str("Transgender")
+            bundle = {'first_name': fname, 'last_name': lname, 'gender': gender, 'phone': casual_user.phone}
+            return render(request, self.template_name, {'current_user':bundle})
+
+    def post(self, request):
+        current_user = request.user
+
+        first_name = request.POST.dict()['first_name']
+        last_name = request.POST.dict()['last_name']
+        gender = request.POST.dict()['gender']
+        phone = request.POST.dict()['phone']
+        gender_string = gender
+        if gender=="Male":
+            gender = 1
+        elif gender=="Female":
+            gender = 2
+        elif gender=="Transgender":
+            gender = 3
+        updateExistingUser(current_user, first_name, last_name, gender, phone)
+        userdetail = dict()
+        userdetail = {'first_name': first_name, 'last_name': last_name, 'gender': gender_string, 'phone': phone}
+    
+        return render(request, self.template_name, {'current_user':userdetail})
+
+class ViewProfileView(View):
+    form_class = EditProfileForm
+    template_name = 'casual_user/viewprofile.html' 
+
+    #display blank form
+    def get(self, request):
+        current_user = request.user
+        print(type(current_user))
+        if str(current_user) is 'AnonymousUser':
+            raise Http404
+        else:
+            casual_user = CasualUser.objects.get(user=current_user)
+            bundle = dict()
+            #name = casual_user.user.first_name + ' ' +  casual_user.user.last_name
+            fname = casual_user.user.first_name
+            lname = casual_user.user.last_name
+            gender = casual_user.gender
+            if gender==1:
+                gender = str("Male")
+            elif gender==2:
+                gender = str("Female")
+            elif gender==3:
+                gender = str("Transgender")
+            bundle = {'First Name': fname, 'Last Name': lname,'Date of Birth': casual_user.date_of_birth, 'Gender': gender, 'Email':casual_user.email, 'Phone': casual_user.phone}
+            return render(request, self.template_name, {'current_user':bundle})
 
 

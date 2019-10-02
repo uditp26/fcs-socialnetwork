@@ -34,3 +34,30 @@ class Friend(models.Model):
     
     def __str__(self):
         return self.username
+
+class Wallet(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user_type = models.SmallIntegerField()
+    amount = models.FloatField()
+    transactions_left = models.PositiveIntegerField()
+
+    def __str__(self):
+        return self.user.username
+
+class Request(models.Model):
+    from_user = models.CharField(max_length=50)
+    to_user = models.CharField(max_length=50)
+    amount = models.FloatField()
+    status = models.SmallIntegerField()
+
+    def __str__(self):
+        return self.from_user
+
+class Transaction(models.Model):
+    from_user = models.CharField(max_length=50)
+    to_user = models.CharField(max_length=50)
+    amount = models.FloatField()
+    timestamp = models.DateTimeField()
+
+    def __str__(self):
+        return self.from_user
