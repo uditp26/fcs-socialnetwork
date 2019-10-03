@@ -1,6 +1,7 @@
 from django import forms
 from .models import Friend
 from login.models import User
+from phonenumber_field.formfields import PhoneNumberField
 
 
 class AddMoneyForm(forms.Form):
@@ -35,3 +36,15 @@ class RequestMoneyForm(forms.Form):
     class Meta:
         # model
         fields = ['request_from', 'amount']
+
+class EditProfileForm(forms.Form):
+    first_name = forms.CharField(max_length=50)
+    last_name = forms.CharField(max_length=50)
+    date_of_birth = forms.DateTimeField(widget=forms.TextInput(attrs={'class':'datetime-input'}))
+    gender = forms.ChoiceField(choices=[(1, 'Male'), (2, 'Female'), (3, 'Transgender')],
+    widget = forms.RadioSelect)
+    phone = PhoneNumberField(widget=forms.TextInput(), required=False)
+    
+    class Meta:
+        # model = User
+        fields = [ 'first_name', 'last_name', 'date_of_birth', 'gender', 'phone' ]

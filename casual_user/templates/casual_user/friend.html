@@ -19,17 +19,17 @@
                     </tr>
                 </thead>
                 <tbody>     
-                    
-                    {% for key, value in current_user.items %}
-                        {% for i in value %}:
-                        <tr>
-                            <td>{{ i }}</td>
-                            <td> <input type="submit" name= {{ i }} class="btn btn-primary" value="Unfriend" /> </td>
-                        </tr>
+                    <form action="#" method="post"> 
+                        {% csrf_token %}
+                        {% for key, value in current_user.items %}
+                            {% for i in value %}:
+                            <tr>
+                                <td>{{ i }}</td>
+                                <td> <input type="submit" name= {{ i }} class="btn btn-primary" value="Unfriend" /> </td>
+                            </tr>
+                            {% endfor %}
                         {% endfor %}
-                    
-                    {% endfor %}
-                     
+                    </form>
                 </tbody>
             </table>
         </div>
