@@ -34,9 +34,11 @@ from urllib.parse import urlparse, urlunparse
 
 from .forms import LoginForm, RequestpwdForm, ResetpwdForm, RegistrationForm, PasswordResetForm, SetPasswordForm
 
-from .models import User
+from .models import User, FailedLogin
 
-from casual_user.models import CasualUser
+from casual_user.models import CasualUser, Wallet
+
+import time
 
 UserModel = get_user_model()
 
@@ -59,7 +61,6 @@ def createNewUser(email, password, first_name, last_name, u_type):
     new_user.save()
 
     return new_user, username
-
 class LoginFormView(View):
     form_class = LoginForm
     template_name = 'login/login_form.html'
@@ -86,18 +87,57 @@ class LoginFormView(View):
             if user is not None:
 
                 if user.is_active and int(radio_btn) == user.user_type:
-                    login(request, user)
-                    # redirect to respective page
-                    if radio_btn == '1':
-                        return redirect('casual_user:homepage')
-                    elif radio_btn == '2':
-                        return redirect('')
+                    f_list = FailedLogin.objects.filter(username=username)
+
+                    if len(f_list) > 0:
+                        curr_time = time.time()
+
+                        if f_list[0].next_login > curr_time:
+                            form.add_error('username', "Access Denied. Backoff.")
+                        else:
+                            FailedLogin.objects.filter(username=username).delete()
+                            login(request, user)
+
+                            # redirect to respective page
+                            if radio_btn == '1':
+                                return redirect('casual_user:homepage')
+                            elif radio_btn == '2':
+                                return redirect('')
+                            else:
+                                return redirect('')
                     else:
-                        return redirect('')
+                        login(request, user)
+
+                        # redirect to respective page
+                        if radio_btn == '1':
+                            return redirect('casual_user:homepage')
+                        elif radio_btn == '2':
+                            return redirect('')
+                        else:
+                            return redirect('')
                 else:
                     form.add_error('username', "User does not exist.")
             else:
-                form.add_error('username', "User credentials did not match existing records.")
+                timestamp = time.time()
+                f_list = FailedLogin.objects.filter(username=username)
+                if len(f_list) == 0:
+                    FailedLogin(username=username, count=1, last_login=timestamp, next_login=timestamp).save()
+                    form.add_error('username', "User credentials did not match existing records.")
+                else:
+                    if f_list[0].last_login < f_list[0].next_login:
+                        form.add_error('username', "Access Denied. Backoff for 3 mins.")
+                    else:
+                        if f_list[0].count == 3:
+                            f_list[0].count = 0 
+                            f_list[0].last_login = timestamp
+                            new_timestamp = timestamp + 180
+                            f_list[0].next_login = new_timestamp
+                        else:
+                            f_list[0].count += 1
+                            f_list[0].last_login = timestamp
+                            f_list[0].next_login = timestamp
+                        f_list[0].save()
+                        form.add_error('username', "User credentials did not match existing records.")
         return render(request, self.template_name, {'form': form})
 
 class RegistrationFormView(View):
@@ -111,7 +151,7 @@ class RegistrationFormView(View):
 
     #put data inside blank text fields 
     def post(self, request):
-        current_user = request.user
+        # current_user = request.user
         form = self.form_class(request.POST)
         
         if form.is_valid():
@@ -130,10 +170,15 @@ class RegistrationFormView(View):
             if account_type == '1':
                 c_user = CasualUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email)
                 c_user.save()
+                Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=15).save()
                 return render(request, 'login/registrationsuccess.html', {'username': username})
             elif account_type == '2':
+                # add entry to premium user table
+                Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=30).save()
                 return render(request, 'login/registrationsuccess.html', {'username': username})
             else:
+                # add entry to commercial user table
+                Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=10000).save()
                 return render(request, 'login/registrationsuccess.html', {'username': username})
 
         return render(request, self.template_name, {'form': form})
