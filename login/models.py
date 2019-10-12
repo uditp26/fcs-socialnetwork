@@ -10,3 +10,9 @@ class User(AbstractUser):
     )
 
     user_type = models.PositiveSmallIntegerField(choices=USER_TYPE_CHOICES, default=0)
+
+class FailedLogin(models.Model):
+    username = models.CharField(max_length=30)
+    count = models.PositiveSmallIntegerField()
+    last_login = models.DecimalField(decimal_places=2, max_digits=20)
+    next_login = models.DecimalField(decimal_places=2, max_digits=20)

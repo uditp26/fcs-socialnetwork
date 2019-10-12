@@ -31,3 +31,31 @@ class Friend(models.Model):
     def __str__(self):
         return self.username
         
+
+class Wallet(models.Model):
+    username = models.CharField(max_length=30)
+    user_type = models.SmallIntegerField()
+    amount = models.FloatField()
+    transactions_left = models.PositiveIntegerField()
+
+    def __str__(self):
+        return self.username
+
+class Request(models.Model):
+    request_id = models.CharField(max_length=15)
+    sender = models.CharField(max_length=30)
+    receiver = models.CharField(max_length=30)
+    amount = models.FloatField()
+    status = models.SmallIntegerField(default=0)
+
+    def __str__(self):
+        return self.sender
+
+class Transaction(models.Model):
+    sender = models.CharField(max_length=30)
+    receiver = models.CharField(max_length=30)
+    amount = models.FloatField()
+    timestamp = models.DateTimeField()
+
+    def __str__(self):
+        return self.sender
