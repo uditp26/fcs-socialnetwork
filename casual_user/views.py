@@ -312,36 +312,36 @@ class FriendView(View):
         current_user[username1] = current_user_friendlist
         return render(request, self.template_name, {'current_user': current_user})
 
-        def post(self, request):
-            current_user = request.user
-            username1 = current_user.username
+    def post(self, request):
+        current_user = request.user
+        username1 = current_user.username
 
-            have_friend, current_user_friendlist = showfrndlist(username1)
+        have_friend, current_user_friendlist = showfrndlist(username1)
 
-            for i in current_user_friendlist:
-                print(request.POST.dict())
-                try:
-                    selected_user = i
-                    
-                    if request.POST.dict()[selected_user] == "Unfriend":
-                        have_friend.friend_list.remove(selected_user)
-                        have_friend.save()
+        for i in current_user_friendlist:
+            print(request.POST.dict())
+            try:
+                selected_user = i
 
-                        #for implementation of bi-direction remove_friend
-                        b_user_friendlist = Friend.objects.get(username = selected_user)
-                        b_user_friendlist.friend_list.remove(current_user.username)
-                        b_user_friendlist.save()
+                if request.POST.dict()[selected_user] == "Unfriend":
+                    have_friend.friend_list.remove(selected_user)
+                    have_friend.save()
 
-                        break
-                except:
-                    pass
+                    #for implementation of bi-direction remove_friend
+                    b_user_friendlist = Friend.objects.get(username = selected_user)
+                    b_user_friendlist.friend_list.remove(current_user.username)
+                    b_user_friendlist.save()
 
-            have_friend, current_user_friendlist = showfrndlist(username1)
-                
-            current_user = dict()
-            current_user[username1] = current_user_friendlist
+                    break
+            except:
+                pass
 
-            return render(request, self.template_name, {'current_user': current_user})
+        have_friend, current_user_friendlist = showfrndlist(username1)
+
+        current_user = dict()
+        current_user[username1] = current_user_friendlist
+
+        return render(request, self.template_name, {'current_user': current_user})
 
 class WalletView(View):
     template_name = 'casual_user/mywallet.html'
