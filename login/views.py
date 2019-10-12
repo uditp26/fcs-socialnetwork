@@ -37,7 +37,7 @@ from .forms import LoginForm, RequestpwdForm, ResetpwdForm, RegistrationForm, Pa
 from .models import User
 
 from casual_user.models import CasualUser
-
+from premium_user.models import PremiumUser
 UserModel = get_user_model()
 
 def createNewUser(email, password, first_name, last_name, u_type):
@@ -91,7 +91,7 @@ class LoginFormView(View):
                     if radio_btn == '1':
                         return redirect('casual_user:homepage')
                     elif radio_btn == '2':
-                        return redirect('')
+                        return redirect('premium_user:myprofile')
                     else:
                         return redirect('')
                 else:
@@ -132,6 +132,8 @@ class RegistrationFormView(View):
                 c_user.save()
                 return render(request, 'login/registrationsuccess.html', {'username': username})
             elif account_type == '2':
+                p_user = PremiumUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email)
+                p_user.save()
                 return render(request, 'login/registrationsuccess.html', {'username': username})
             else:
                 return render(request, 'login/registrationsuccess.html', {'username': username})

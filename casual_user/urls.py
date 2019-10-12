@@ -10,5 +10,8 @@ urlpatterns = [
     
     url(r'listuser/$', views.ListUserView.as_view(), name='listuser'),
     url(r'friend/$', views.FriendView.as_view(), name='friend'),
+
+    url(r'listgroup/$', views.ListGroupView.as_view(), name='listgroup'),
+    
      
 ]
