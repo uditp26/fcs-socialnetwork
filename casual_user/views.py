@@ -1,10 +1,13 @@
 from django.shortcuts import render, reverse, redirect
 from django.views.generic import View
 from django.http import Http404
+
+
 from .models import CasualUser, Post, Friend, Wallet, Request, Transaction
 from login.models import User
-from premium_user.models import AddGroup, GroupRequest
+from premium_user.models import AddGroup, GroupRequest, PremiumUser
 
+from django.contrib import messages
 from django.contrib.auth import logout
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
@@ -13,6 +16,17 @@ from django import forms
 from .forms import AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm
 
 from datetime import datetime
+
+def get_user_info(current_user):
+    try:
+        login_user = CasualUser.objects.get(user=current_user)
+    except:
+        pass
+    try:
+        login_user = PremiumUser.objects.get(user=current_user)
+    except:
+        pass
+    return login_user
 
 def savePost(self, request, current_user):
 
@@ -23,7 +37,6 @@ def savePost(self, request, current_user):
     user_posts = Post.objects.filter(username = str(current_user))
 
     if len(user_posts) > 0:
-
         if scope == "0":
             user_posts[0].private_posts.append(post)
             user_posts[0].prv_timestamp.append(timestamp)
@@ -41,9 +54,9 @@ def savePost(self, request, current_user):
 
 
 def genBundle(current_user):
-    casual_user = CasualUser.objects.get(user=current_user)
+    login_user = get_user_info(current_user)
     bundle = dict()
-    name = casual_user.user.first_name + ' ' +  casual_user.user.last_name
+    name = login_user.user.first_name + ' ' +  login_user.user.last_name
     user_posts = Post.objects.filter(username=str(current_user))
     # use post 'level' information
     all_posts = None
@@ -76,11 +89,17 @@ def genBundle(current_user):
     return bundle
 
 def updateExistingUser(curr_user, first_name, last_name, gender, phone):
-    
     curr_user.first_name = first_name
     curr_user.last_name = last_name
     curr_user.save()
-    curr_user = CasualUser.objects.get(user=curr_user)
+    try:
+        curr_user = CasualUser.objects.get(user=curr_user)
+    except:
+        pass
+    try:
+        curr_user = PremiumUser.objects.get(user=curr_user)
+    except:
+        pass
     curr_user.gender = gender
     curr_user.phone = phone
     curr_user.save()
@@ -111,20 +130,21 @@ class ProfileView(View):
         if str(current_user) is 'AnonymousUser':
             raise Http404
         else:
-            casual_user = CasualUser.objects.get(user=current_user)
+            login_user = get_user_info(current_user)
             bundle = dict()
             #name = casual_user.user.first_name + ' ' +  casual_user.user.last_name
-            fname = casual_user.user.first_name
-            lname = casual_user.user.last_name
-            gender = casual_user.gender
+            fname = login_user.user.first_name
+            lname = login_user.user.last_name
+            gender = login_user.gender
             if gender==1:
                 gender = str("Male")
             elif gender==2:
                 gender = str("Female")
             elif gender==3:
                 gender = str("Transgender")
-            bundle = {'First Name': fname, 'Last Name': lname,'Date of Birth': casual_user.date_of_birth, 'Gender': gender, 'Email':casual_user.email, 'Phone': casual_user.phone}
+            bundle = {'First Name': fname, 'Last Name': lname,'Date of Birth': login_user.date_of_birth, 'Gender': gender, 'Email':login_user.email, 'Phone': login_user.phone}
             return render(request, self.template_name, {'current_user':bundle})
+
 
 class EditProfileFormView(View):
     form_class = EditProfileForm
@@ -136,19 +156,20 @@ class EditProfileFormView(View):
         if str(current_user) is 'AnonymousUser':
             raise Http404
         else:
-            casual_user = CasualUser.objects.get(user=current_user)
+            login_user = get_user_info(current_user)
+            fname = login_user.user.first_name
+            lname = login_user.user.last_name
+            gender = login_user.gender
+            phoneno = login_user.phone
             bundle = dict()
             #name = casual_user.user.first_name + ' ' +  casual_user.user.last_name
-            fname = casual_user.user.first_name
-            lname = casual_user.user.last_name
-            gender = casual_user.gender
             if gender==1:
                 gender = str("Male")
             elif gender==2:
                 gender = str("Female")
             elif gender==3:
                 gender = str("Transgender")
-            bundle = {'first_name': fname, 'last_name': lname, 'gender': gender, 'phone': casual_user.phone}
+            bundle = {'first_name': fname, 'last_name': lname, 'gender': gender, 'phone': phoneno}
             return render(request, self.template_name, {'current_user':bundle})
 
     def post(self, request):
@@ -198,13 +219,9 @@ def user_friendlist(current_user, request):
         have_friend.friend_list = current_user_friendlist
 
     search_name = findfriend(request).lower()
-
     print("search name : ", search_name)
-
     user_name_list = User.objects.filter(first_name__icontains = search_name)
-
     user_name_list = user_name_list.exclude(username = current_user.username)
-
     return user_name_list, current_user_friendlist, have_friend
 
 
@@ -312,36 +329,36 @@ class FriendView(View):
         current_user[username1] = current_user_friendlist
         return render(request, self.template_name, {'current_user': current_user})
 
-        def post(self, request):
-            current_user = request.user
-            username1 = current_user.username
+    def post(self, request):
+        current_user = request.user
+        username1 = current_user.username
 
-            have_friend, current_user_friendlist = showfrndlist(username1)
+        have_friend, current_user_friendlist = showfrndlist(username1)
 
-            for i in current_user_friendlist:
-                print(request.POST.dict())
-                try:
-                    selected_user = i
-                    
-                    if request.POST.dict()[selected_user] == "Unfriend":
-                        have_friend.friend_list.remove(selected_user)
-                        have_friend.save()
-
-                        #for implementation of bi-direction remove_friend
-                        b_user_friendlist = Friend.objects.get(username = selected_user)
-                        b_user_friendlist.friend_list.remove(current_user.username)
-                        b_user_friendlist.save()
-
-                        break
-                except:
-                    pass
-
-            have_friend, current_user_friendlist = showfrndlist(username1)
+        for i in current_user_friendlist:
+            print(request.POST.dict())
+            try:
+                selected_user = i
                 
-            current_user = dict()
-            current_user[username1] = current_user_friendlist
+                if request.POST.dict()[selected_user] == "Unfriend":
+                    have_friend.friend_list.remove(selected_user)
+                    have_friend.save()
 
-            return render(request, self.template_name, {'current_user': current_user})
+                    #for implementation of bi-direction remove_friend
+                    b_user_friendlist = Friend.objects.get(username = selected_user)
+                    b_user_friendlist.friend_list.remove(current_user.username)
+                    b_user_friendlist.save()
+
+                    break
+            except:
+                pass
+
+        have_friend, current_user_friendlist = showfrndlist(username1)
+            
+        current_user = dict()
+        current_user[username1] = current_user_friendlist
+
+        return render(request, self.template_name, {'current_user': current_user})
 
 class WalletView(View):
     template_name = 'casual_user/mywallet.html'
@@ -500,125 +517,6 @@ class RequestMoneyFormView(View):
 
         return render(request, self.template_name, {'form': form})
 
-#___________________________________________________________________________________________________        
-
-def request_bundle(current_user, search_name):
-    group_name_list = AddGroup.objects.filter(name__icontains = search_name)
-    group_name_list = group_name_list.exclude(admin = current_user.username)
-
-    group_status=[]
-    bundle={}
-    
-    key = 1
-    for group in group_name_list:
-        try:
-            if current_user.username in group.members:
-                #to store as backup
-                group_name = group.name
-                group_admin = group.admin
-                group_status.append([key, group_admin, group_name, 3])
-                
-                #to pass in html
-                temp={}
-                temp[group_name] = 3
-                bundle[key] = temp
-                key = key+1
-                #Assumption(group admin cannot formed two group of same name) 
-                group_name_list = group_name_list.exclude(admin = group_admin, name = group_name)
-        except:
-            pass
-    
-    for group in group_name_list:
-        try:
-            group = GroupRequest.objects.get(admin = group.admin, name = group.name)
-            
-            if current_user.username in group.members:
-                group_name = group.name
-                group_admin = group.admin                 
-                group_status.append([key, group_admin, group_name, 2])
-                
-                #to pass in html
-                temp={}
-                temp[group_name] = 2
-                bundle[key] = temp
-                key = key+1
-                group_name_list = group_name_list.exclude(admin = group_admin, name = group_name)
-        except:
-            pass
-
-    for group in group_name_list:
-        group_name = group.name
-        group_admin = group.admin
-        group_status.append([key, group_admin, group_name, 1])
-                
-        temp={}
-        temp[group_name] = 1
-        bundle[key] = temp
-
-        key = key+1
-
-    return bundle, group_status
-#________________________________________________________________________________________________________________
-class ListGroupView(View):
-    template_name = 'casual_user/list_group.html'
-    
-    def get(self, request):
-        current_user = request.user
-        
-        search_name = findGroup(request).lower()
-        # print("search name : ", search_name)
-        bundle , group_status = request_bundle(current_user, search_name)
-        return render(request, self.template_name, {'bundle': bundle})
-
-    def post(self, request):
-        current_user = request.user
-        username = current_user.username
-
-        search_name = findGroup(request).lower()
-        # print("search name : ", search_name)
-
-        bundle , group_status = request_bundle(current_user, search_name)
-        
-        print("Previous Bundle : ", bundle)
-
-        for value in group_status:
-            print(request.POST.dict())
-            try:
-                if request.POST.dict()[str(value[0])] == "join":
-                    admin = value[1]; name = value[2]
-                    try:
-                        group = GroupRequest.objects.get(admin = admin, name = name)
-                        group.members.append(username)
-                        group.save()
-                        #bundle update
-                        bundle[value[0]][name] = 2
-                        break
-                    except:
-                        group = GroupRequest()
-                        group.admin = admin ; group.name = name
-                        group.status = 2
-                        group.members = [] 
-                        group.members.append(username)
-                        group.save()
-                        #bundle update
-                        bundle[value[0]][name] = 2
-                        break
-                
-                elif request.POST.dict()[str(value[0])] == "leave":
-                    admin = value[1]; name = value[2]
-                    group = AddGroup.objects.get(admin = admin, name = name)
-                    group.members.remove(username)
-                    group.save()
-
-                    bundle[value[0]][name] = 1
-                    break
-
-            except:
-                pass
-        
-        print("Modified Bundle :", bundle)
-        return render(request, self.template_name, {'bundle': bundle})
-        
 class PendingRequestsView(View):
     template_name = 'casual_user/pendingrequests.html'
 
@@ -661,6 +559,129 @@ class PendingRequestsView(View):
         bundle['requests'] = pay_requests
         return render(request, self.template_name, {'pay_req': bundle})
 
+#___________________________________________________________________________________________________        
+
+def request_bundle(current_user, search_name):
+    group_name_list = AddGroup.objects.filter(name__icontains = search_name)
+    group_name_list = group_name_list.exclude(admin = current_user.username)
+
+    group_status=[]
+    bundle={}
+    
+    key = 1
+    for group in group_name_list:
+        try:
+            if current_user.username in group.members:
+                #to store as backup
+                group_name = group.name
+                group_admin = group.admin
+                group_price = group.price
+                group_status.append([key, group_admin, group_name, 3, group_price])
+                #to pass in html
+                temp1={}; temp1[group_price] = 3
+                temp2={}; temp2[group_name] = temp1
+                bundle[key] = temp2
+                key = key+1
+                #Assumption(group admin cannot formed two group of same name) 
+                group_name_list = group_name_list.exclude(admin = group_admin, name = group_name)
+        except:
+            pass
+    
+    for group1 in group_name_list:
+        try:
+            group = GroupRequest.objects.get(admin = group1.admin, name = group1.name)
+            
+            if current_user.username in group.members:
+                group_name = group.name
+                group_admin = group.admin        
+                group_price = group1.price
+                group_status.append([key, group_admin, group_name, 2, group_price])
+                
+                #to pass in html
+                temp1={}; temp1[group_price] = 2
+                temp2={}; temp2[group_name] = temp1
+                bundle[key] = temp2
+                key = key+1
+                group_name_list = group_name_list.exclude(admin = group_admin, name = group_name)
+        except:
+            pass
+
+    for group in group_name_list:
+        group_name = group.name
+        group_admin = group.admin
+        group_price = group.price
+        group_status.append([key, group_admin, group_name, 1, group_price])
+                
+        temp1={}; temp1[group_price] = 1
+        temp2={}; temp2[group_name] = temp1
+        bundle[key] = temp2
+
+        key = key+1
+
+    return bundle, group_status
+
+class ListGroupView(View):
+    template_name = 'casual_user/list_group.html'
+    
+    def get(self, request):
+        current_user = request.user
+        search_name = findGroup(request).lower()
+        bundle , group_status = request_bundle(current_user, search_name)
+        print("BUNDLE : ",bundle )
+        return render(request, self.template_name, {'bundle': bundle})
+
+    def post(self, request):
+        current_user = request.user
+        username = current_user.username
+        search_name = findGroup(request).lower()
+      
+        bundle , group_status = request_bundle(current_user, search_name)
+
+        for value in group_status:
+            print(request.POST.dict())
+            try:
+                if request.POST.dict()[str(value[0])] == "join":
+                    admin = value[1]; name = value[2]
+
+                    wallet = Wallet.objects.get(username=username)
+                    amount = wallet.amount; price = value[4]
+                    
+                    if price <= amount and wallet.transactions_left > 0:
+                        wallet.amount -= price
+                        wallet.transactions_left -= 1
+                        wallet.save()
+                        try:
+                            group = GroupRequest.objects.get(admin = admin, name = name)
+                            group.members.append(username); group.save()
+                            #bundle update
+                            bundle[value[0]][value[2]][value[4]] = 2
+                            return render(request, self.template_name, {'bundle': bundle})
+                        except:
+                            group = GroupRequest()
+                            group.admin = admin ; group.name = name
+                            group.status = 2
+                            group.members = [] 
+                            group.members.append(username); group.save()
+                            #bundle update
+                            bundle[value[0]][value[2]][value[4]] = 2
+                            return render(request, self.template_name, {'bundle': bundle})
+                    else:
+                        #MESSAGE NOT WORKING
+                        messages.info(request, 'Please recharge.')
+                        return render(request, self.template_name, {'bundle': bundle})
+
+                elif request.POST.dict()[str(value[0])] == "leave":
+                    admin = value[1]; name = value[2]
+                    group = AddGroup.objects.get(admin = admin, name = name)
+                    group.members.remove(username)
+                    group.save()
+                    bundle[value[0]][value[2]][value[4]] = 1
+                    return render(request, self.template_name, {'bundle': bundle})
+
+            except:
+                pass
+        return render(request, self.template_name, {'bundle': bundle})
+        
 class LogoutView(View):
     template_name = 'login/login.html'
 

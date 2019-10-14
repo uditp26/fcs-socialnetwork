@@ -16,6 +16,7 @@
                 <thead>
                     <tr>
                         <th class="text-center text-uppercase">Group</th>
+                        <th class="text-center text-uppercase">Group Price</th>
                         <th class="text-center text-uppercase">Join Group / Leave Group</th>
                     </tr>
                 </thead>
@@ -27,20 +28,23 @@
 
                         {% for key, value in bundle.items %}
                             {% for key1, value1 in value.items %}
-                                <tr>
-                                    <td>{{ key1 }}</td>
-                                    <td>
-                                        {% if value1 == 1 %}
-                                            <button name = {{ key }} type="submit" class="btn btn-default" value="join">Join</button>
-                                        
-                                        {% elif value1 == 2 %}
-                                            <button name = {{ key }} type="submit" class="btn btn-default" value="pending" disabled>Pending</button>
-                                        
-                                        {% else %}
-                                            <button name = {{ key }} type="submit" class="btn btn-default" value="leave">Leave</button>
-                                        {% endif %}
-                                    </td>
-                                </tr> 
+                                {% for key2, value2 in value1.items %}
+                                    <tr>
+                                        <td>{{ key1 }}</td>
+                                        <td>{{ key2 }}</td>
+                                        <td>
+                                            {% if value2 == 1 %}
+                                                <button name = {{ key }} type="submit" class="btn btn-default" value="join">Join</button>
+                                            
+                                            {% elif value2 == 2 %}
+                                                <button name = {{ key }} type="submit" class="btn btn-default" value="pending" disabled>Pending</button>
+                                            
+                                            {% else %}
+                                                <button name = {{ key }} type="submit" class="btn btn-default" value="leave">Leave</button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}  
                             {% endfor %}
                         {% endfor %}
                     </form>
