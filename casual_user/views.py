@@ -231,7 +231,6 @@ class ListUserView(View):
     def get(self, request):
         current_user = request.user
         user_name_list, current_user_friendlist, have_friend = user_friendlist(current_user, request)
-        
         bundle = dict()
         for user in user_name_list:
             if user.username in current_user_friendlist:
@@ -243,7 +242,6 @@ class ListUserView(View):
 
     def post(self, request):
         current_user = request.user
-    
         user_name_list, current_user_friendlist, have_friend = user_friendlist(current_user, request)
 
         print("Old_friend_list = ", current_user_friendlist)
@@ -301,6 +299,7 @@ class ListUserView(View):
 
         return render(request, self.template_name, {'bundle': bundle})
 
+
 def showfrndlist(username1):
     try:
         have_friend = Friend.objects.get(username=username1)
@@ -317,7 +316,7 @@ class FriendView(View):
     def get(self, request):
         current_user = request.user
         username1 = current_user.username
-
+        
         try:
             have_friend = Friend.objects.get(username = username1)
             current_user_friendlist  = list(have_friend.friend_list)
@@ -332,7 +331,6 @@ class FriendView(View):
     def post(self, request):
         current_user = request.user
         username1 = current_user.username
-
         have_friend, current_user_friendlist = showfrndlist(username1)
 
         for i in current_user_friendlist:
@@ -357,7 +355,6 @@ class FriendView(View):
             
         current_user = dict()
         current_user[username1] = current_user_friendlist
-
         return render(request, self.template_name, {'current_user': current_user})
 
 class WalletView(View):
@@ -559,7 +556,7 @@ class PendingRequestsView(View):
         bundle['requests'] = pay_requests
         return render(request, self.template_name, {'pay_req': bundle})
 
-#___________________________________________________________________________________________________        
+#____________________________________________________Search Group_______________________________________________        
 
 def request_bundle(current_user, search_name):
     group_name_list = AddGroup.objects.filter(name__icontains = search_name)
@@ -677,7 +674,6 @@ class ListGroupView(View):
                     group.save()
                     bundle[value[0]][value[2]][value[4]] = 1
                     return render(request, self.template_name, {'bundle': bundle})
-
             except:
                 pass
         return render(request, self.template_name, {'bundle': bundle})

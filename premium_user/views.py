@@ -133,28 +133,30 @@ class HomepageView(View):
 
 #pass to groupdetails.html
 def getgroupdetails(current_user):
-    groups = AddGroup.objects.filter(admin = current_user.username)
-    groupplan = GroupPlan.objects.get(customer = current_user.username)
     bundle = {}
-    groupinfo = {}
-    key = 1; anotherkey  = 11
-    for group in groups:
-        m = ""; members = group.members
-        for i in members:
-            m = m + " " + "'"+i+"'"
-        temp1 = {}; temp1[group.price] = m
-        temp2 = {}; temp2[group.name] = temp1
-        groupinfo[key] = temp2
-        key+=1
-    groupplaninfo = {}
-    current_date = datetime.now().date()
-    rechargedate = groupplan.recharge_on.date()
-    days = 30 - int((current_date - rechargedate).days)
-    noofgroups = groupplan.noofgroup
-    groupplaninfo[days] = noofgroups
-    bundle[anotherkey] = groupinfo; anotherkey += 1
-    bundle[anotherkey] = groupplaninfo
-    
+    try:
+        groups = AddGroup.objects.filter(admin = current_user.username)
+        groupplan = GroupPlan.objects.get(customer = current_user.username)
+        groupinfo = {}
+        key = 1; anotherkey  = 11
+        for group in groups:
+            m = ""; members = group.members
+            for i in members:
+                m = m + " " + "'"+i+"'"
+            temp1 = {}; temp1[group.price] = m
+            temp2 = {}; temp2[group.name] = temp1
+            groupinfo[key] = temp2
+            key+=1
+        groupplaninfo = {}
+        current_date = datetime.now().date()
+        rechargedate = groupplan.recharge_on.date()
+        days = 30 - int((current_date - rechargedate).days)
+        noofgroups = groupplan.noofgroup
+        groupplaninfo[days] = noofgroups
+        bundle[anotherkey] = groupinfo; anotherkey += 1
+        bundle[anotherkey] = groupplaninfo
+    except:
+        pass
     return bundle
          
 class GroupDetailsView(View):
@@ -237,6 +239,284 @@ class EditProfileFormView(View):
     
         return render(request, self.template_name, {'current_user':userdetail})
 
+#__________________________________________Make Friend and Find Friend & Group_______________________________________________
+def findfriend(request):
+    q=""
+    if 'q' in request.GET and request.GET['q']:
+        q = request.GET['q']
+    return q
+
+def findGroup(request):
+    q=""
+    if 'q' in request.GET and request.GET['q']:
+        q = request.GET['q']
+    return q
+
+#function that return search user/users list, friend_list and current user friend object
+def user_friendlist(current_user, request):
+    username1 = current_user.username
+    try:
+        have_friend = Friend.objects.get(username = username1)
+        current_user_friendlist  = list(have_friend.friend_list)
+
+    except:
+        have_friend = Friend()
+        have_friend.username = username1
+        current_user_friendlist = []
+        have_friend.friend_list = current_user_friendlist
+
+    search_name = findfriend(request).lower()
+    user_name_list = User.objects.filter(first_name__icontains = search_name)
+    user_name_list = user_name_list.exclude(username = current_user.username)
+    return user_name_list, current_user_friendlist, have_friend
+
+
+class ListUserView(View):
+    template_name = 'premium_user/list_user.html'
+    
+    def get(self, request):
+        current_user = request.user
+        user_name_list, current_user_friendlist, have_friend = user_friendlist(current_user, request)
+        bundle = dict()
+        for user in user_name_list:
+            if user.username in current_user_friendlist:
+                bundle[user] = 0
+            else:
+                bundle[user] = 1
+
+        return render(request, self.template_name, {'bundle': bundle})
+
+    def post(self, request):
+        current_user = request.user
+        user_name_list, current_user_friendlist, have_friend = user_friendlist(current_user, request)
+
+        for i in user_name_list:
+            print(request.POST.dict())
+            try:
+                selected_user = i.username
+                if request.POST.dict()[selected_user] == "Add Friend":
+                    
+                    have_friend.friend_list.append(selected_user)
+                    have_friend.save()
+
+                    #for implementation of bi-direction add_friend
+                    try:
+                        b_user_friendlist = Friend.objects.get(username = selected_user)
+                        b_user_friendlist.friend_list.append(current_user.username)
+                        b_user_friendlist.save()
+                    except:
+                        b_user_friendlist = Friend()
+                        b_user_friendlist.username = selected_user
+                        current_user_friendlist = []
+                        b_user_friendlist.friend_list = current_user_friendlist
+                        b_user_friendlist.friend_list.append(current_user.username)
+                        b_user_friendlist.save()
+                    break
+
+                elif request.POST.dict()[selected_user] == "Unfriend":
+                    have_friend.friend_list.remove(selected_user)
+                    have_friend.save()
+
+                    #for implementation of bi-direction remove_friend
+                    b_user_friendlist = Friend.objects.get(username = selected_user)
+                    b_user_friendlist.friend_list.remove(current_user.username)
+                    b_user_friendlist.save()
+
+                    break
+            except:
+                pass
+            
+        user_name_list, current_user_friendlist, have_friend = user_friendlist(current_user, request)
+
+        print("updated_friend_list = ", current_user_friendlist)
+        bundle = dict()
+        for user in user_name_list:
+            if user.username in current_user_friendlist:
+                bundle[user] = 0
+            else:
+                bundle[user] = 1
+
+        return render(request, self.template_name, {'bundle': bundle})
+
+
+def showfrndlist(username1):
+    try:
+        have_friend = Friend.objects.get(username=username1)
+        current_user_friendlist = list(have_friend.friend_list)
+    except:
+        current_user_friendlist = []
+
+    return have_friend, current_user_friendlist
+
+#for display friendlist
+class FriendView(View):
+    template_name = 'premium_user/friend.html'
+
+    def get(self, request):
+        current_user = request.user
+        username1 = current_user.username
+        try:
+            have_friend = Friend.objects.get(username = username1)
+            current_user_friendlist  = list(have_friend.friend_list)
+
+        except:
+            current_user_friendlist = []
+
+        current_user = dict()
+        current_user[username1] = current_user_friendlist
+        return render(request, self.template_name, {'current_user': current_user})
+
+    def post(self, request):
+        current_user = request.user
+        username1 = current_user.username
+        have_friend, current_user_friendlist = showfrndlist(username1)
+
+        for i in current_user_friendlist:
+            print(request.POST.dict())
+            try:
+                selected_user = i
+                
+                if request.POST.dict()[selected_user] == "Unfriend":
+                    have_friend.friend_list.remove(selected_user)
+                    have_friend.save()
+
+                    #for implementation of bi-direction remove_friend
+                    b_user_friendlist = Friend.objects.get(username = selected_user)
+                    b_user_friendlist.friend_list.remove(current_user.username)
+                    b_user_friendlist.save()
+
+                    break
+            except:
+                pass
+
+        have_friend, current_user_friendlist = showfrndlist(username1)
+            
+        current_user = dict()
+        current_user[username1] = current_user_friendlist
+        return render(request, self.template_name, {'current_user': current_user})
+
+#function needed in group search 
+def request_bundle(current_user, search_name):
+    group_name_list = AddGroup.objects.filter(name__icontains = search_name)
+    group_name_list = group_name_list.exclude(admin = current_user.username)
+
+    group_status=[]
+    bundle={}
+    
+    key = 1
+    for group in group_name_list:
+        try:
+            if current_user.username in group.members:
+                #to store as backup
+                group_name = group.name
+                group_admin = group.admin
+                group_price = group.price
+                group_status.append([key, group_admin, group_name, 3, group_price])
+                #to pass in html
+                temp1={}; temp1[group_price] = 3
+                temp2={}; temp2[group_name] = temp1
+                bundle[key] = temp2
+                key = key+1
+                #Assumption(group admin cannot formed two group of same name) 
+                group_name_list = group_name_list.exclude(admin = group_admin, name = group_name)
+        except:
+            pass
+    
+    for group1 in group_name_list:
+        try:
+            group = GroupRequest.objects.get(admin = group1.admin, name = group1.name)
+            
+            if current_user.username in group.members:
+                group_name = group.name
+                group_admin = group.admin        
+                group_price = group1.price
+                group_status.append([key, group_admin, group_name, 2, group_price])
+                
+                #to pass in html
+                temp1={}; temp1[group_price] = 2
+                temp2={}; temp2[group_name] = temp1
+                bundle[key] = temp2
+                key = key+1
+                group_name_list = group_name_list.exclude(admin = group_admin, name = group_name)
+        except:
+            pass
+
+    for group in group_name_list:
+        group_name = group.name
+        group_admin = group.admin
+        group_price = group.price
+        group_status.append([key, group_admin, group_name, 1, group_price])
+                
+        temp1={}; temp1[group_price] = 1
+        temp2={}; temp2[group_name] = temp1
+        bundle[key] = temp2
+
+        key = key+1
+
+    return bundle, group_status
+
+class ListGroupView(View):
+    template_name = 'premium_user/list_group.html'
+    
+    def get(self, request):
+        current_user = request.user
+        search_name = findGroup(request).lower()
+        bundle , group_status = request_bundle(current_user, search_name)
+        print("BUNDLE : ",bundle )
+        return render(request, self.template_name, {'bundle': bundle})
+
+    def post(self, request):
+        current_user = request.user
+        username = current_user.username
+        search_name = findGroup(request).lower()
+      
+        bundle , group_status = request_bundle(current_user, search_name)
+
+        for value in group_status:
+            print(request.POST.dict())
+            try:
+                if request.POST.dict()[str(value[0])] == "join":
+                    admin = value[1]; name = value[2]
+
+                    wallet = Wallet.objects.get(username=username)
+                    amount = wallet.amount; price = value[4]
+                    
+                    if price <= amount and wallet.transactions_left > 0:
+                        wallet.amount -= price
+                        wallet.transactions_left -= 1
+                        wallet.save()
+                        try:
+                            group = GroupRequest.objects.get(admin = admin, name = name)
+                            group.members.append(username); group.save()
+                            #bundle update
+                            bundle[value[0]][value[2]][value[4]] = 2
+                            return render(request, self.template_name, {'bundle': bundle})
+                        except:
+                            group = GroupRequest()
+                            group.admin = admin ; group.name = name
+                            group.status = 2
+                            group.members = [] 
+                            group.members.append(username); group.save()
+                            #bundle update
+                            bundle[value[0]][value[2]][value[4]] = 2
+                            return render(request, self.template_name, {'bundle': bundle})
+                    else:
+                        #message.info NOT WORKING (but not a problem code do)
+                        messages.info(request, 'Please recharge.')
+                        return render(request, self.template_name, {'bundle': bundle})
+
+                elif request.POST.dict()[str(value[0])] == "leave":
+                    admin = value[1]; name = value[2]
+                    group = AddGroup.objects.get(admin = admin, name = name)
+                    group.members.remove(username)
+                    group.save()
+                    bundle[value[0]][value[2]][value[4]] = 1
+                    return render(request, self.template_name, {'bundle': bundle})
+            except:
+                pass
+        return render(request, self.template_name, {'bundle': bundle})
+
+#__________________________________________________Group plan_________________________________________________
 
 class GroupPlanFormView(View):
     form_class = GroupPlanForm

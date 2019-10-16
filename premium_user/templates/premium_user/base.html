@@ -34,7 +34,7 @@
                         </li>
 
                         <li class="">
-                            <a href="{% url 'casual_user:friend' %}">
+                            <a href="{% url 'premium_user:friend' %}">
                                 <span class="glyphicon glyphicon-shopping-cart" aria-hidden="true"></span>&nbsp; Friends
                             </a>
                         </li>
@@ -70,8 +70,14 @@
                     </ul>
 
                     <ul class="nav navbar-nav navbar-right">
+                        <form class="navbar-form navbar-left" role="search" method="get" action="{% url 'premium_user:listgroup' %}">
+                            <div class="form-group">
+                                <input id = "search_username" type="text" class="form-control" name="q" value="">
+                            </div>
+                            <button id = "search_submit" type="submit" class="btn btn-default">Find Groups</button>
+                        </form>
 
-                        <form class="navbar-form navbar-left" role="search" method="get" action="#">
+                        <form class="navbar-form navbar-left" role="search" method="get" action="{% url 'premium_user:listuser' %}">
                             <div class="form-group">
                                 <input id = "search_username" type="text" class="form-control" name="q" value="">
                             </div>
