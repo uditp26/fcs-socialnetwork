@@ -666,7 +666,7 @@ class ListGroupView(View):
                             bundle[value[0]][value[2]][value[4]] = 2
                             return render(request, self.template_name, {'bundle': bundle})
                     else:
-                        #MESSAGE NOT WORKING
+                        #message.info NOT WORKING (but not a problem code do)
                         messages.info(request, 'Please recharge.')
                         return render(request, self.template_name, {'bundle': bundle})
 

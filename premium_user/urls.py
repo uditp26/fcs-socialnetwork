@@ -12,7 +12,8 @@ urlpatterns = [
     url(r'addgroup/$', views.AddGroupFormView.as_view(), name='addgroup'),
     url(r'listrequest/$', views.ListRequestView.as_view(), name='listrequest'),
     url(r'groupplan/$', views.GroupPlanFormView.as_view(), name='groupplan'),
-
+    url(r'groupdetails/$', views.GroupDetailsView.as_view(), name='groupdetails'),
+    
     url(r'mywallet/$', views.WalletView.as_view(), name="wallet"),
     url(r'mywallet/addmoney/$', views.AddMoneyFormView.as_view(), name="addmoney"),
     url(r'mywallet/sendmoney/$', views.SendMoneyFormView.as_view(), name="sendmoney"),

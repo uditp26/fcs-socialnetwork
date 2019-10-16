@@ -88,10 +88,8 @@ def genBundle(current_user):
     if len(f_user) > 0:
 
         friends = f_user[0].friend_list
-
         for frnd in friends:
             fp = Post.objects.filter(username=frnd)
-
             if len(fp) > 0:
                 f_posts += list(reversed(fp[0].friends_posts))
 
@@ -131,6 +129,41 @@ class HomepageView(View):
         current_user = request.user
         savePost(self, request, current_user)
         bundle = genBundle(current_user)
+        return render(request, self.template_name, {'bundle':bundle})
+
+#pass to groupdetails.html
+def getgroupdetails(current_user):
+    groups = AddGroup.objects.filter(admin = current_user.username)
+    groupplan = GroupPlan.objects.get(customer = current_user.username)
+    bundle = {}
+    groupinfo = {}
+    key = 1; anotherkey  = 11
+    for group in groups:
+        m = ""; members = group.members
+        for i in members:
+            m = m + " " + "'"+i+"'"
+        temp1 = {}; temp1[group.price] = m
+        temp2 = {}; temp2[group.name] = temp1
+        groupinfo[key] = temp2
+        key+=1
+    groupplaninfo = {}
+    current_date = datetime.now().date()
+    rechargedate = groupplan.recharge_on.date()
+    days = 30 - int((current_date - rechargedate).days)
+    noofgroups = groupplan.noofgroup
+    groupplaninfo[days] = noofgroups
+    bundle[anotherkey] = groupinfo; anotherkey += 1
+    bundle[anotherkey] = groupplaninfo
+    
+    return bundle
+         
+class GroupDetailsView(View):
+    template_name = 'premium_user/groupdetails.html'
+
+    def get(self, request):
+        current_user = request.user
+        
+        bundle = getgroupdetails(current_user)
         return render(request, self.template_name, {'bundle':bundle})
 
 class ProfileView(View):
