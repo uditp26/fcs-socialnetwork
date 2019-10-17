@@ -3,6 +3,7 @@ from django.views.generic import View
 from django.http import Http404
 from .models import CasualUser, Post, Friend, Wallet, Request, Transaction
 from login.models import User
+from premium_user.models import AddGroup, GroupRequest
 
 from django.contrib.auth import logout
 from django.http import HttpResponse, HttpResponseRedirect
@@ -194,6 +195,13 @@ class EditProfileFormView(View):
 
 
 def findfriend(request):
+    q=""
+    if 'q' in request.GET and request.GET['q']:
+        q = request.GET['q']
+    return q
+
+def findGroup(request):
+    q=""
     if 'q' in request.GET and request.GET['q']:
         q = request.GET['q']
     return q
@@ -328,36 +336,36 @@ class FriendView(View):
         current_user[username1] = current_user_friendlist
         return render(request, self.template_name, {'current_user': current_user})
 
-        def post(self, request):
-            current_user = request.user
-            username1 = current_user.username
+    def post(self, request):
+        current_user = request.user
+        username1 = current_user.username
 
-            have_friend, current_user_friendlist = showfrndlist(username1)
+        have_friend, current_user_friendlist = showfrndlist(username1)
 
-            for i in current_user_friendlist:
-                print(request.POST.dict())
-                try:
-                    selected_user = i
-                    
-                    if request.POST.dict()[selected_user] == "Unfriend":
-                        have_friend.friend_list.remove(selected_user)
-                        have_friend.save()
+        for i in current_user_friendlist:
+            print(request.POST.dict())
+            try:
+                selected_user = i
 
-                        #for implementation of bi-direction remove_friend
-                        b_user_friendlist = Friend.objects.get(username = selected_user)
-                        b_user_friendlist.friend_list.remove(current_user.username)
-                        b_user_friendlist.save()
+                if request.POST.dict()[selected_user] == "Unfriend":
+                    have_friend.friend_list.remove(selected_user)
+                    have_friend.save()
 
-                        break
-                except:
-                    pass
+                    #for implementation of bi-direction remove_friend
+                    b_user_friendlist = Friend.objects.get(username = selected_user)
+                    b_user_friendlist.friend_list.remove(current_user.username)
+                    b_user_friendlist.save()
 
-            have_friend, current_user_friendlist = showfrndlist(username1)
-                
-            current_user = dict()
-            current_user[username1] = current_user_friendlist
+                    break
+            except:
+                pass
 
-            return render(request, self.template_name, {'current_user': current_user})
+        have_friend, current_user_friendlist = showfrndlist(username1)
+
+        current_user = dict()
+        current_user[username1] = current_user_friendlist
+
+        return render(request, self.template_name, {'current_user': current_user})
 
 @method_decorator(decorators, name='dispatch')
 class WalletView(View):
@@ -556,6 +564,126 @@ class RequestMoneyFormView(View):
 
         return render(request, self.template_name, {'form': form})
 
+#___________________________________________________________________________________________________        
+
+def request_bundle(current_user, search_name):
+    group_name_list = AddGroup.objects.filter(name__icontains = search_name)
+    group_name_list = group_name_list.exclude(admin = current_user.username)
+
+    group_status=[]
+    bundle={}
+    
+    key = 1
+    for group in group_name_list:
+        try:
+            if current_user.username in group.members:
+                #to store as backup
+                group_name = group.name
+                group_admin = group.admin
+                group_status.append([key, group_admin, group_name, 3])
+                
+                #to pass in html
+                temp={}
+                temp[group_name] = 3
+                bundle[key] = temp
+                key = key+1
+                #Assumption(group admin cannot formed two group of same name) 
+                group_name_list = group_name_list.exclude(admin = group_admin, name = group_name)
+        except:
+            pass
+    
+    for group in group_name_list:
+        try:
+            group = GroupRequest.objects.get(admin = group.admin, name = group.name)
+            
+            if current_user.username in group.members:
+                group_name = group.name
+                group_admin = group.admin                 
+                group_status.append([key, group_admin, group_name, 2])
+                
+                #to pass in html
+                temp={}
+                temp[group_name] = 2
+                bundle[key] = temp
+                key = key+1
+                group_name_list = group_name_list.exclude(admin = group_admin, name = group_name)
+        except:
+            pass
+
+    for group in group_name_list:
+        group_name = group.name
+        group_admin = group.admin
+        group_status.append([key, group_admin, group_name, 1])
+                
+        temp={}
+        temp[group_name] = 1
+        bundle[key] = temp
+
+        key = key+1
+
+    return bundle, group_status
+#________________________________________________________________________________________________________________
+@method_decorator(decorators, name='dispatch')
+class ListGroupView(View):
+    template_name = 'casual_user/list_group.html'
+    
+    def get(self, request):
+        current_user = request.user
+        
+        search_name = findGroup(request).lower()
+        # print("search name : ", search_name)
+        bundle , group_status = request_bundle(current_user, search_name)
+        return render(request, self.template_name, {'bundle': bundle})
+
+    def post(self, request):
+        current_user = request.user
+        username = current_user.username
+
+        search_name = findGroup(request).lower()
+        # print("search name : ", search_name)
+
+        bundle , group_status = request_bundle(current_user, search_name)
+        
+        print("Previous Bundle : ", bundle)
+
+        for value in group_status:
+            print(request.POST.dict())
+            try:
+                if request.POST.dict()[str(value[0])] == "join":
+                    admin = value[1]; name = value[2]
+                    try:
+                        group = GroupRequest.objects.get(admin = admin, name = name)
+                        group.members.append(username)
+                        group.save()
+                        #bundle update
+                        bundle[value[0]][name] = 2
+                        break
+                    except:
+                        group = GroupRequest()
+                        group.admin = admin ; group.name = name
+                        group.status = 2
+                        group.members = [] 
+                        group.members.append(username)
+                        group.save()
+                        #bundle update
+                        bundle[value[0]][name] = 2
+                        break
+                
+                elif request.POST.dict()[str(value[0])] == "leave":
+                    admin = value[1]; name = value[2]
+                    group = AddGroup.objects.get(admin = admin, name = name)
+                    group.members.remove(username)
+                    group.save()
+
+                    bundle[value[0]][name] = 1
+                    break
+
+            except:
+                pass
+        
+        print("Modified Bundle :", bundle)
+        return render(request, self.template_name, {'bundle': bundle})
+        
 @method_decorator(decorators, name='dispatch')
 class PendingRequestsView(View):
     template_name = 'casual_user/pendingrequests.html'

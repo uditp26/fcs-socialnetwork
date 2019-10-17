@@ -10,6 +10,10 @@ urlpatterns = [
     url(r'editprofile/$', views.EditProfileFormView.as_view(), name='editprofile'),
     url(r'listuser/$', views.ListUserView.as_view(), name='listuser'),
     url(r'friend/$', views.FriendView.as_view(), name='friend'),
+
+    url(r'listgroup/$', views.ListGroupView.as_view(), name='listgroup'),
+    
+     
     url(r'mywallet/$', views.WalletView.as_view(), name="wallet"),
     url(r'mywallet/otpverify/$', views.OTPVerificationFormView.as_view(), name="otpverify"),
     url(r'mywallet/addmoney/$', views.AddMoneyFormView.as_view(), name="addmoney"),

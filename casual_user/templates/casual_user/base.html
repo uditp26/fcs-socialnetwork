@@ -45,17 +45,22 @@
                             </a>
                         </li>
 
-                        <li class="">
-                            <form class="navbar-form navbar-left" role="search" method="get" action="{% url 'casual_user:listuser' %}">
-                                <div class="form-group">
-                                    <input id = "search_username" type="text" class="form-control" name="q" value="">
-                                </div>
-                                <button id = "search_submit" type="submit" class="btn btn-default">Find Friends</button>
-                            </form>
-                        </li>
                     </ul>                                       
         
                     <ul class="nav navbar-nav navbar-right">
+                        <form class="navbar-form navbar-left" role="search" method="get" action="{% url 'casual_user:listgroup' %}">
+                            <div class="form-group">
+                                <input id = "search_username" type="text" class="form-control" name="q" value="">
+                            </div>
+                            <button id = "search_submit" type="submit" class="btn btn-default">Find Groups</button>
+                        </form>
+
+                        <form class="navbar-form navbar-left" role="search" method="get" action="{% url 'casual_user:listuser' %}">
+                            <div class="form-group">
+                                <input id = "search_username" type="text" class="form-control" name="q" value="">
+                            </div>
+                            <button id = "search_submit" type="submit" class="btn btn-default">Find Friends</button>
+                        </form>
                         
                         <li class="dropdown">
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown">&nbsp;<span class="glyphicon glyphicon-user"></span> My Profile <span class="caret"></span></a>

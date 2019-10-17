@@ -30,6 +30,7 @@ class Friend(models.Model):
     
     def __str__(self):
         return self.username
+        
 
 class Wallet(models.Model):
     username = models.CharField(max_length=30)

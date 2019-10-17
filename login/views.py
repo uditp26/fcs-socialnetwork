@@ -37,6 +37,7 @@ from .forms import LoginForm, RequestpwdForm, ResetpwdForm, RegistrationForm, Pa
 from .models import User, FailedLogin
 
 from casual_user.models import CasualUser, Wallet
+from premium_user.models import PremiumUser
 
 import time
 
@@ -87,6 +88,14 @@ class LoginFormView(View):
             if user is not None:
 
                 if user.is_active and int(radio_btn) == user.user_type:
+                    login(request, user)
+                    # redirect to respective page
+                    
+                    # if radio_btn == '1':
+                    #     return redirect('casual_user:homepage')
+                    # elif radio_btn == '2':
+                    #     return redirect('premium_user:myprofile')
+
                     f_list = FailedLogin.objects.filter(username=username)
 
                     if len(f_list) > 0:
@@ -102,7 +111,7 @@ class LoginFormView(View):
                             if radio_btn == '1':
                                 return redirect('casual_user:homepage')
                             elif radio_btn == '2':
-                                return redirect('')
+                                return redirect('premium_user:myprofile')
                             else:
                                 return redirect('')
                     else:
@@ -112,7 +121,7 @@ class LoginFormView(View):
                         if radio_btn == '1':
                             return redirect('casual_user:homepage')
                         elif radio_btn == '2':
-                            return redirect('')
+                            return redirect('premium_user:myprofile')
                         else:
                             return redirect('')
                 else:
@@ -173,6 +182,8 @@ class RegistrationFormView(View):
                 Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=15).save()
                 return render(request, 'login/registrationsuccess.html', {'username': username})
             elif account_type == '2':
+                p_user = PremiumUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email)
+                p_user.save()
                 # add entry to premium user table
                 Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=30).save()
                 return render(request, 'login/registrationsuccess.html', {'username': username})
