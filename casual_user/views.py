@@ -9,9 +9,19 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
 from django import forms
 
-from .forms import AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm
+from .forms import AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, OTPVerificationForm
 
 from datetime import datetime
+
+import time
+from django.core.mail import send_mail
+import hashlib
+
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import cache_control
+
+decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='https://127.0.0.1:8000/login/')]
 
 def savePost(self, request, current_user):
 
@@ -24,18 +34,18 @@ def savePost(self, request, current_user):
     if len(user_posts) > 0:
 
         if scope == "0":
-            user_posts[0].private_posts.append(post)
-            user_posts[0].prv_timestamp.append(timestamp)
-        elif scope == "1":
             user_posts[0].friends_posts.append(post)
             user_posts[0].frnd_timestamp.append(timestamp)
+        elif scope == "1":
+            user_posts[0].public_posts.append(post)
+            user_posts[0].pblc_timestamp.append(timestamp)
 
         user_posts[0].save()
     else:
         if scope == "0":
-            new_post = Post(username=str(current_user), private_posts = [post], friends_posts = [], prv_timestamp = [timestamp], frnd_timestamp = [])
+            new_post = Post(username=str(current_user), friends_posts = [post], public_posts = [], frnd_timestamp = [timestamp], pblc_timestamp = [])
         elif scope == "1":
-            new_post = Post(username=str(current_user), private_posts = [], friends_posts = [post], prv_timestamp = [], frnd_timestamp = [timestamp])
+            new_post = Post(username=str(current_user), friends_posts = [], public_posts = [post], frnd_timestamp = [], pblc_timestamp = [timestamp])
         new_post.save()
 
 
@@ -50,8 +60,8 @@ def genBundle(current_user):
     pposts = []
 
     if len(user_posts) > 0:
-        pposts = list(reversed(user_posts[0].private_posts))
-        pposts += list(reversed(user_posts[0].friends_posts))   # reverses the list
+        pposts = list(reversed(user_posts[0].friends_posts))
+        pposts += list(reversed(user_posts[0].public_posts))   # reverses the list
 
     # fetch friends' posts
 
@@ -69,7 +79,16 @@ def genBundle(current_user):
             if len(fp) > 0:
                 f_posts += list(reversed(fp[0].friends_posts))
 
-    all_posts = pposts + f_posts
+    p_posts = []
+
+    all_user_posts = Post.objects.exclude(username=str(current_user))
+
+    for post in all_user_posts:
+
+        if len(post.public_posts) > 0:
+            p_posts.append(post.public_posts[-1])
+
+    all_posts = pposts + f_posts + p_posts
 
     bundle = {'name': name, 'posts':all_posts}
     return bundle
@@ -84,6 +103,7 @@ def updateExistingUser(curr_user, first_name, last_name, gender, phone):
     curr_user.phone = phone
     curr_user.save()
 
+@method_decorator(decorators, name='dispatch')
 class HomepageView(View):
     template_name = 'casual_user/homepage.html'
 
@@ -101,6 +121,7 @@ class HomepageView(View):
         bundle = genBundle(current_user)
         return render(request, self.template_name, {'bundle':bundle})
 
+@method_decorator(decorators, name='dispatch')
 class ProfileView(View):
     template_name = 'casual_user/myprofile.html'
 
@@ -125,6 +146,7 @@ class ProfileView(View):
             bundle = {'First Name': fname, 'Last Name': lname,'Date of Birth': casual_user.date_of_birth, 'Gender': gender, 'Email':casual_user.email, 'Phone': casual_user.phone}
             return render(request, self.template_name, {'current_user':bundle})
 
+@method_decorator(decorators, name='dispatch')
 class EditProfileFormView(View):
     form_class = EditProfileForm
     template_name = 'casual_user/editprofile.html'
@@ -200,6 +222,7 @@ def user_friendlist(current_user, request):
     return user_name_list, current_user_friendlist, have_friend
 
 
+@method_decorator(decorators, name='dispatch')
 class ListUserView(View):
     template_name = 'casual_user/list_user.html'
     
@@ -286,6 +309,7 @@ def showfrndlist(username1):
     return have_friend, current_user_friendlist
 
 #for display friendlist
+@method_decorator(decorators, name='dispatch')
 class FriendView(View):
     template_name = 'casual_user/friend.html'
 
@@ -335,6 +359,7 @@ class FriendView(View):
 
             return render(request, self.template_name, {'current_user': current_user})
 
+@method_decorator(decorators, name='dispatch')
 class WalletView(View):
     template_name = 'casual_user/mywallet.html'
 
@@ -350,6 +375,49 @@ class WalletView(View):
 
         return render(request, self.template_name, {'wallet': w_dict})
 
+def generateOTP():
+    current_date_time = str(datetime.now())
+    data_encode = current_date_time.encode('utf-8').strip()
+    hash_obj = hashlib.sha256()
+    hash_obj.update(data_encode)
+    hash_value = hash_obj.hexdigest()
+
+    i = 0
+    a = 0; b = 0; c = 0; d = 0
+
+    for j in range(4, len(hash_value)+1, 4):
+        hash_split = hash_value[i:j]
+        a = (a + int(hash_split[0], 16))%10
+        b = (b + int(hash_split[1], 16))%10
+        c = (c + int(hash_split[2], 16))%10
+        d = (d + int(hash_split[3], 16))%10
+        i = j
+    otp = str(a) + str(b) + str(c) + str(d)
+    return otp
+
+def sendOTP(request, email, subject):
+    otp = generateOTP()
+
+    message = 'The one-time password for this transaction is: ' + otp + '. This otp is valid for 180 seconds only. Please enter the code for completing this transaction.'
+
+    # vulnerable!
+    request.session['otp'] = otp
+
+    curr_time = time.time()
+
+    request.session['timer'] = str(curr_time)
+
+    c = send_mail(
+        subject,
+        message,
+        'admin@socialnet.com',
+        [email],
+        fail_silently=False,
+    )
+
+    return c
+
+@method_decorator(decorators, name='dispatch')
 class AddMoneyFormView(View):
     form_class = AddMoneyForm
     template_name = 'casual_user/addmoney.html'
@@ -368,43 +436,39 @@ class AddMoneyFormView(View):
 
             # Implement OTP functionality here
 
-            wallet = Wallet.objects.get(username=username)
+            email = User.objects.get(username=username).email
+            subject = 'OTP for Add Money Transaction'
+            c = sendOTP(request, email, subject)
 
-            if wallet.transactions_left == 0:
-                form.add_error('amount', "You don't have any transactions remaining for the month.")
-            else: 
-                wallet.amount += float(amount)
-                wallet.transactions_left -= 1
-                wallet.save()
-
-                # Add to Transactions table
-                Transaction(sender=username, receiver=username, amount=amount, timestamp=datetime.now(tz=None)).save()
-
-                w_dict = dict() 
-
-                w_dict['Account Type'] = wallet.user_type
-                w_dict['Amount'] = wallet.amount
-                w_dict['Remaining Transactions'] = wallet.transactions_left
-
-                return render(request, 'casual_user/mywallet.html', {'wallet': w_dict})
+            if c == 1:
+                wallet = Wallet.objects.get(username=username)
+                if wallet.transactions_left == 0:
+                    form.add_error('amount', "You don't have any transactions remaining for the month.")
+                else:
+                    request.session['trans_type'] = 'add'
+                    request.session['amount'] = str(amount)
+                    return redirect('casual_user:otpverify')
+            else:
+                form.add_error('amount', 'OTP generation failed. Please check your network connection.')
 
         return render(request, self.template_name, {'form': form})
 
+@method_decorator(decorators, name='dispatch')
 class SendMoneyFormView(View):
     form_class = SendMoneyForm
     template_name = 'casual_user/sendmoney.html'
 
     def get(self, request):
         form = self.form_class(request.user)
-        # friend_list = None
-        # try:
-        #     friend_list = Friend.objects.get(username=request.user).friend_list
-        # except:
-        #     friend_list = []
-        # if len(friend_list) > 0:
-        #     return render(request, self.template_name, {'form': form})
-        # else:
-        #     return render(request, )
+        friend_list = None
+        try:
+            friend_list = Friend.objects.get(username=request.user).friend_list
+        except:
+            friend_list = []
+        if len(friend_list) > 0:
+            return render(request, self.template_name, {'form': form})
+        else:
+            return redirect('casual_user:nofriends')
         return render(request, self.template_name, {'form': form})
 
     def post(self, request):
@@ -414,45 +478,46 @@ class SendMoneyFormView(View):
         if form.is_valid():
             amount = form.cleaned_data['amount']
             send_to = form.cleaned_data['send_to']
-
-            # Implement OTP functionality here
-
+            username = current_user.username
             sender_wallet = Wallet.objects.get(username=current_user)
-            receiver_wallet = Wallet.objects.get(username=send_to)
 
             if sender_wallet.transactions_left == 0:
                 form.add_error('amount', "You don't have any transactions remaining for the month.")
+            elif float(amount) > sender_wallet.amount:
+                form.add_error('amount', "You don't have enough balance.")
+            elif float(amount) == 0:
+                form.add_error('amount', "Enter amount greater than 0.")
             else:
-                # Check for available balance
-                if float(amount) <= sender_wallet.amount:
-                    sender_wallet.amount -= float(amount)
-                    sender_wallet.transactions_left -= 1    # Assumption: Sending money causes one transaction of the sender to be exhausted.
-                    receiver_wallet.amount += float(amount)
-                    sender_wallet.save()
-                    receiver_wallet.save()
+                email = User.objects.get(username=username).email
+                subject = 'OTP for Send Money Transaction'
+                c = sendOTP(request, email, subject)
 
-                    # Add to Transactions table
-                    Transaction(sender=current_user, receiver=send_to, amount=amount, timestamp=datetime.now(tz=None)).save()
-
-                    w_dict = dict() 
-
-                    w_dict['Account Type'] = sender_wallet.user_type
-                    w_dict['Amount'] = sender_wallet.amount
-                    w_dict['Remaining Transactions'] = sender_wallet.transactions_left
-
-                    return render(request, 'casual_user/mywallet.html', {'wallet': w_dict})
-                else:
-                    form.add_error('amount', "You don't have enough balance.")
+                if c==1:
+                    request.session['trans_type'] = 'send'
+                    request.session['amount'] = str(amount)
+                    request.session['send_to'] = send_to
+                    return redirect('casual_user:otpverify')
+                else:          
+                    form.add_error('amount', 'OTP generation failed. Please check your network connection.')
 
         return render(request, self.template_name, {'form': form})
 
+@method_decorator(decorators, name='dispatch')
 class RequestMoneyFormView(View):
     form_class = RequestMoneyForm
     template_name = 'casual_user/requestmoney.html'
 
     def get(self, request):
         form = self.form_class(request.user)
-        return render(request, self.template_name, {'form': form})
+        friend_list = None
+        try:
+            friend_list = Friend.objects.get(username=request.user).friend_list
+        except:
+            friend_list = []
+        if len(friend_list) > 0:
+            return render(request, self.template_name, {'form': form})
+        else:
+            return redirect('casual_user:nofriends')
 
     def post(self, request):
         current_user = request.user
@@ -461,37 +526,37 @@ class RequestMoneyFormView(View):
         if form.is_valid():
             amount = form.cleaned_data['amount']
             request_from = form.cleaned_data['request_from']
+            username = current_user.username
 
             # Implement OTP functionality here
 
-            sender = Wallet.objects.get(username=current_user)
+            email = User.objects.get(username=username).email
+            subject = 'OTP for Send Money Transaction'
+            c = sendOTP(request, email, subject)
 
-            if sender.transactions_left == 0:
-                form.add_error('amount', "You don't have any transactions remaining for the month.")
-            else:
-                # check number of pending requests made
-                pending_requests = len(Request.objects.filter(sender=current_user, status=0))
-                
-                if sender.transactions_left - pending_requests > 0:
-                    # Add entry to Request table
-                    req_count = len(Request.objects.all())
-                    req_id = "RQST-" + str(req_count + 1)
-                    Request(request_id=req_id, sender=current_user, receiver=request_from, amount=float(amount), status=0).save()
+            if c==1:
 
-                    # Assumption: If the request is accepted, then no. of transactions is deducted by one.
+                sender = Wallet.objects.get(username=current_user)
 
-                    w_dict = dict()
-
-                    w_dict['Account Type'] = sender.user_type
-                    w_dict['Amount'] = sender.amount
-                    w_dict['Remaining Transactions'] = sender.transactions_left
-
-                    return render(request, 'casual_user/mywallet.html', {'wallet': w_dict})
+                if sender.transactions_left == 0:
+                    form.add_error('amount', "You don't have any transactions remaining for the month.")
                 else:
-                    form.add_error('amount', "You have transactions pending. Can't request at this point.")
+                    # check number of pending requests made
+                    pending_requests = len(Request.objects.filter(sender=current_user, status=0))
+                    
+                    if sender.transactions_left - pending_requests > 0:
+                        request.session['trans_type'] = 'req'
+                        request.session['amount'] = str(amount)
+                        request.session['request_from'] = request_from
+                        return redirect('casual_user:otpverify')
+                    else:
+                        form.add_error('amount', "You have transactions pending. Can't request at this point.")
+            else:
+                form.add_error('amount', 'OTP generation failed. Please check your network connection.')
 
         return render(request, self.template_name, {'form': form})
 
+@method_decorator(decorators, name='dispatch')
 class PendingRequestsView(View):
     template_name = 'casual_user/pendingrequests.html'
 
@@ -534,6 +599,123 @@ class PendingRequestsView(View):
         bundle['requests'] = pay_requests
         return render(request, self.template_name, {'pay_req': bundle})
 
+@method_decorator(decorators, name='dispatch')
+class OTPVerificationFormView(View):
+    form_class = OTPVerificationForm
+    template_name = 'casual_user/otpverify.html'
+
+    def get(self, request):
+        form = self.form_class(None)
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        current_user = request.user
+
+        form = self.form_class(request.POST)
+
+        if form.is_valid():
+            otp = form.cleaned_data['otp']
+
+            if request.session['otp'] != otp:
+                form.add_error('otp', 'Wrong OTP entered!')
+            elif time.time() > float(request.session['timer']) + 180:
+                form.add_error('otp', 'Timer expired!')
+            else: 
+                request.session.pop('otp', None)
+                request.session.pop('timer', None)
+                request.session.modified = True
+
+                if request.session['trans_type'] == 'add':
+                    request.session.pop('trans_type', None)
+                    request.session.modified = True
+                    username = current_user.username
+                    wallet = Wallet.objects.get(username=username)
+                    wallet.amount += float(request.session['amount'])
+                    wallet.transactions_left -= 1
+                    wallet.save()
+
+                    # Add to Transactions table
+                    Transaction(sender=username, receiver=username, amount=float(request.session['amount']), timestamp=datetime.now(tz=None)).save()
+
+                    request.session.pop('amount', None)
+                    request.session.modified = True
+
+                    w_dict = dict() 
+
+                    w_dict['Account Type'] = wallet.user_type
+                    w_dict['Amount'] = wallet.amount
+                    w_dict['Remaining Transactions'] = wallet.transactions_left
+
+                    return render(request, 'casual_user/mywallet.html', {'wallet': w_dict})
+
+                elif request.session['trans_type'] == 'send':
+                    request.session.pop('trans_type', None)
+                    request.session.modified = True
+
+                    sender_wallet = Wallet.objects.get(username=current_user)
+                    receiver_wallet = Wallet.objects.get(username=request.session['send_to'])
+
+                    sender_wallet.amount -= float(request.session['amount'])
+                    sender_wallet.transactions_left -= 1    # Assumption: Sending money causes one transaction of the sender to be exhausted.
+                    receiver_wallet.amount += float(request.session['amount'])
+                    sender_wallet.save()
+                    receiver_wallet.save()
+
+                    # Add to Transactions table
+                    Transaction(sender=current_user, receiver=request.session['send_to'], amount=float(request.session['amount']), timestamp=datetime.now(tz=None)).save()
+
+                    request.session.pop('amount', None)
+                    request.session.pop('send_to', None)
+                    request.session.modified = True
+
+                    w_dict = dict() 
+
+                    w_dict['Account Type'] = sender_wallet.user_type
+                    w_dict['Amount'] = sender_wallet.amount
+                    w_dict['Remaining Transactions'] = sender_wallet.transactions_left
+
+                    return render(request, 'casual_user/mywallet.html', {'wallet': w_dict})
+
+                elif request.session['trans_type'] == 'req':
+                    request.session.pop('trans_type', None)
+                    request.session.modified = True
+
+                    sender = Wallet.objects.get(username=current_user)
+
+                    # Add entry to Request table
+                    req_count = len(Request.objects.all())
+                    req_id = "RQST-" + str(req_count + 1)
+                    Request(request_id=req_id, sender=current_user, receiver=request.session['request_from'], amount=float(request.session['amount']), status=0).save()
+
+                    request.session.pop('amount', None)
+                    request.session.pop('request_from', None)
+                    request.session.modified = True
+
+                    # Assumption: If the request is accepted, then no. of transactions is deducted by one.
+
+                    w_dict = dict()
+
+                    w_dict['Account Type'] = sender.user_type
+                    w_dict['Amount'] = sender.amount
+                    w_dict['Remaining Transactions'] = sender.transactions_left
+
+                    return render(request, 'casual_user/mywallet.html', {'wallet': w_dict})
+
+                else:
+                    form.add_error('otp', 'Unknown transaction!')
+                
+
+        return render(request, self.template_name, {'form': form})
+
+@method_decorator(decorators, name='dispatch')
+class NofriendsView(View):
+    template_name = 'casual_user/nofriends.html'
+
+    def get(self, request):
+        return render(request, self.template_name)
+
+
+@method_decorator(decorators, name='dispatch')
 class LogoutView(View):
     template_name = 'login/login.html'
 

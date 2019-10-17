@@ -1,0 +1,28 @@
+{% extends 'casual_user/base.html' %}
+{% block title %}OTP Verification{% endblock %}
+
+{% block body %}
+
+<div>
+	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
+			<h1 style="text-indent: 15cm"><font color="white">OTP Verification</font></h1>
+			<h4 style="text-indent: 15cm"><font color="white">Enter OTP for completing transaction</font></h4>
+	</div>
+</div>
+
+<div class="container-fluid">
+	<form class="form-horizontal" action="" method="post" enctype="multipart/form-data">
+		{% csrf_token %}
+		<div class="container-fluid" style="padding: 2cm">
+			{% include 'casual_user/form-template.html' %}
+			<div class="form-group">
+				<div class="col-xs-offset-3 col-xs-1">
+					<button type="submit" class="btn btn-success">Pay</button>
+				</div>
+			</div>
+		</div>
+	</form>
+</div>
+
+
+{% endblock %}

@@ -16,10 +16,10 @@ class CasualUser(models.Model):
 
 class Post(models.Model):
     username = models.CharField(max_length=30)
-    private_posts = ArrayField(models.CharField(max_length=500))
     friends_posts = ArrayField(models.CharField(max_length=500))
-    prv_timestamp = ArrayField(models.DateTimeField())
+    public_posts = ArrayField(models.CharField(max_length=500))
     frnd_timestamp = ArrayField(models.DateTimeField())
+    pblc_timestamp = ArrayField(models.DateTimeField())
 
     def __str__(self):
         return self.username

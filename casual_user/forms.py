@@ -16,9 +16,12 @@ class SendMoneyForm(forms.Form):
 
     def __init__(self, user, *args, **kwargs):
         super(SendMoneyForm, self).__init__(*args, **kwargs)
-        self.fields['send_to'] = forms.ChoiceField(
-            choices=[(friend, User.objects.get(username=friend).first_name + " " + User.objects.get(username=friend).last_name) for friend in Friend.objects.get(username=user).friend_list]
-        )
+        try:
+            self.fields['send_to'] = forms.ChoiceField(
+                choices=[(friend, User.objects.get(username=friend).first_name + " " + User.objects.get(username=friend).last_name) for friend in Friend.objects.get(username=user).friend_list]
+            )
+        except:
+            self.fields['send_to'] = forms.ChoiceField(choices=[])
 
     class Meta:
         # model
@@ -29,9 +32,12 @@ class RequestMoneyForm(forms.Form):
 
     def __init__(self, user, *args, **kwargs):
         super(RequestMoneyForm, self).__init__(*args, **kwargs)
-        self.fields['request_from'] = forms.ChoiceField(
-            choices=[(friend, User.objects.get(username=friend).first_name + " " + User.objects.get(username=friend).last_name) for friend in Friend.objects.get(username=user).friend_list]
-        )
+        try:
+            self.fields['request_from'] = forms.ChoiceField(
+                choices=[(friend, User.objects.get(username=friend).first_name + " " + User.objects.get(username=friend).last_name) for friend in Friend.objects.get(username=user).friend_list]
+            )
+        except:
+            self.fields['request_from'] = forms.ChoiceField(choices=[])
 
     class Meta:
         # model
@@ -48,3 +54,9 @@ class EditProfileForm(forms.Form):
     class Meta:
         # model = User
         fields = [ 'first_name', 'last_name', 'date_of_birth', 'gender', 'phone' ]
+
+class OTPVerificationForm(forms.Form):
+    otp = forms.CharField(max_length=4, widget=forms.NumberInput())
+
+    class Meta:
+        fields = ['otp']
