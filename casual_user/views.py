@@ -119,8 +119,7 @@ class HomepageView(View):
     def post(self, request):
         current_user = request.user
         savePost(self, request, current_user)
-        bundle = genBundle(current_user)
-        return render(request, self.template_name, {'bundle':bundle})
+        return HttpResponseRedirect('')
 
 @method_decorator(decorators, name='dispatch')
 class ProfileView(View):
@@ -188,10 +187,7 @@ class EditProfileFormView(View):
         elif gender=="Transgender":
             gender = 3
         updateExistingUser(current_user, first_name, last_name, gender, phone)
-        userdetail = dict()
-        userdetail = {'first_name': first_name, 'last_name': last_name, 'gender': gender_string, 'phone': phone}
-    
-        return render(request, self.template_name, {'current_user':userdetail})
+        return HttpResponseRedirect('')
 
 
 def findfriend(request):
@@ -283,6 +279,11 @@ class ListUserView(View):
                 elif request.POST.dict()[selected_user] == "Unfriend":
                     print("selected_button", selected_user)
 
+                    # check if any pending money requests between the users; if yes, delete the requests.
+
+                    Request.objects.filter(sender=selected_user, receiver=have_friend.username).delete()
+                    Request.objects.filter(sender=have_friend.username, receiver=selected_user).delete()
+
                     have_friend.friend_list.remove(selected_user)
                     have_friend.save()
 
@@ -348,6 +349,12 @@ class FriendView(View):
                 selected_user = i
 
                 if request.POST.dict()[selected_user] == "Unfriend":
+                    
+                    # check if any pending money requests between the users; if yes, delete the requests.
+
+                    Request.objects.filter(sender=selected_user, receiver=have_friend.username).delete()
+                    Request.objects.filter(sender=have_friend.username, receiver=selected_user).delete()
+
                     have_friend.friend_list.remove(selected_user)
                     have_friend.save()
 
@@ -722,10 +729,11 @@ class PendingRequestsView(View):
                     curr_request.status = 2
                     curr_request.save()
 
-        pay_requests = Request.objects.filter(receiver=current_user, status=0)
-        bundle = dict()
-        bundle['requests'] = pay_requests
-        return render(request, self.template_name, {'pay_req': bundle})
+        # pay_requests = Request.objects.filter(receiver=current_user, status=0)
+        # bundle = dict()
+        # bundle['requests'] = pay_requests
+        # return render(request, self.template_name, {'pay_req': bundle})
+        return HttpResponseRedirect('')
 
 @method_decorator(decorators, name='dispatch')
 class OTPVerificationFormView(View):
