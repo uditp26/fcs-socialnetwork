@@ -47,5 +47,13 @@ class GroupPlan(models.Model):
 
     def __str__(self):
         return self.customer
+
+class Message(models.Model):
+    sender = models.CharField(max_length=40)
+    receiver = models.CharField(max_length=40)
+    messages = ArrayField(models.CharField(max_length=1000, null = True))
+    timestamp = ArrayField(models.DateTimeField())
     
+    def __str__(self):
+        return self.sender
 

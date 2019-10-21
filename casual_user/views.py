@@ -2,7 +2,6 @@ from django.shortcuts import render, reverse, redirect
 from django.views.generic import View
 from django.http import Http404
 
-
 from .models import CasualUser, Post, Friend, Wallet, Request, Transaction
 from login.models import User
 from premium_user.models import AddGroup, GroupRequest, PremiumUser
@@ -29,7 +28,6 @@ def get_user_info(current_user):
     return login_user
 
 def savePost(self, request, current_user):
-
     post = request.POST.dict()['postarea']
     scope = request.POST.dict()['level']
 
@@ -126,7 +124,6 @@ class ProfileView(View):
 
     def get(self, request):
         current_user = request.user
-
         if str(current_user) is 'AnonymousUser':
             raise Http404
         else:
@@ -298,7 +295,6 @@ class ListUserView(View):
                 bundle[user] = 1
 
         return render(request, self.template_name, {'bundle': bundle})
-
 
 def showfrndlist(username1):
     try:

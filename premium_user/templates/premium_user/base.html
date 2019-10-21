@@ -33,14 +33,22 @@
                             </a>
                         </li>
 
-                        <li class="">
-                            <a href="{% url 'premium_user:friend' %}">
-                                <span class="glyphicon glyphicon-shopping-cart" aria-hidden="true"></span>&nbsp; Friends
-                            </a>
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">&nbsp;<span class="glyphicon glyphicon-user"></span> Friend <span class="caret"></span></a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a href="{% url 'premium_user:friend' %}">Friend List</a>
+                                </li>
+
+                                <li>
+                                    <a href="{% url 'premium_user:friendrequest' %}">Friend Request</a>
+                                </li>
+                                
+                            </ul>
                         </li>
 
                         <li class="">
-                            <a href="#">
+                            <a href="{% url 'premium_user:inbox' %}">
                                 <span class="glyphicon glyphicon-comment" aria-hidden="true"></span>&nbsp; Messages
                             </a>
                         </li>
@@ -63,7 +71,7 @@
                                     <a href="{% url 'premium_user:listrequest' %}">View Request</a>
                                 </li>
                                 <li>
-                                    <a href="#">Delete group</a>
+                                    <a href="{% url 'premium_user:deletegroup' %}">Delete group</a>
                                 </li>
                             </ul>
                         </li>
