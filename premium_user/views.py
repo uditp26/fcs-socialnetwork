@@ -2,7 +2,7 @@ from django.shortcuts import render, reverse, redirect
 from django.views.generic import View
 from django.http import Http404
 
-from casual_user.models import Wallet, Transaction, Request, Post, Friend, FriendRequest
+from casual_user.models import Wallet, Transaction, Request, Post, Friend, FriendRequest, CasualUser
 from login.models import User
 from .models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message
 from .forms import AddGroupForm, GroupPlanForm, AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm
@@ -143,7 +143,9 @@ def getgroupdetails(current_user):
         for group in groups:
             m = ""; members = group.members
             for i in members:
-                m = m + " " + "'"+i+"'"
+                user = User.objects.get(username = i )
+                name = str(user.first_name)+' '+str(user.last_name)
+                m = m + " " + "'"+name+"'"
             temp1 = {}; temp1[group.price] = m
             temp2 = {}; temp2[group.name] = temp1
             groupinfo[key] = temp2
@@ -240,6 +242,28 @@ class EditProfileFormView(View):
     
         return render(request, self.template_name, {'current_user':userdetail})
 
+
+#___________________________________________________show userdetails(By dynamic url)___________________________
+class PremiumUserDetailView(View):
+    template_name = 'premium_user/premiumuserdetail.html'
+
+    def get(self, request, premiumuser):
+        username = premiumuser
+
+        user = User.objects.get(username = username)
+        try:
+            premiumuser = PremiumUser.objects.get(user = user)
+        except:
+            pass
+        try:
+            premiumuser = CasualUser.objects.get(user = user)
+        except:
+            pass
+        fname = str(premiumuser.user.first_name)
+        lname = str(premiumuser.user.last_name)
+        premiumuser = {'first_name': fname, 'last_name':lname, 'date_of_birth':premiumuser.date_of_birth, 'gender':premiumuser.gender,'email':premiumuser.email, 'phone':premiumuser.phone }
+        return render(request, self.template_name, {'premiumuser': premiumuser})
+
 #__________________________________________Make Friend and Find Friend & Group_______________________________________________
 def findfriend(request):
     q=""
@@ -253,7 +277,6 @@ def findGroup(request):
         q = request.GET['q']
     return q
 
-#_______________________________________________Friend________________________________________________________
 #function that return search user/users list, friend_list and current user friend object
 def user_friendlist(current_user, request):
     username1 = current_user.username
@@ -288,7 +311,6 @@ def user_friendlist(current_user, request):
                 name = str(user.first_name) + ' ' + str(user.last_name)
                 status = 1; temp = {}; temp[name] = status
                 bundle[user] = temp
-            
             else:
                 name = str(user.first_name) + ' ' + str(user.last_name)
                 status = 2; temp = {}; temp[name] = status
@@ -319,14 +341,12 @@ class ListUserView(View):
                         try:
                             requestto1 = FriendRequest.objects.get(requestto = current_user.username)
                             if selected_user in requestto1.requestfrom:
-                                print("HELLO")
                                 return redirect('premium_user:friendrequest')
                         except:
                             pass
                         requestto = FriendRequest.objects.get(requestto = selected_user)
                         requestto.requestfrom.append(current_user.username)
                         requestto.save()
-                        print("saved object : ", requestto)
                         break
                     except:
                         FriendRequest(requestto = selected_user, requestfrom = [current_user.username]).save()
@@ -413,12 +433,25 @@ class FriendRequestView(View):
 
 def showfrndlist(username1):
     try:
-        have_friend = Friend.objects.get(username=username1)
-        current_user_friendlist = list(have_friend.friend_list)
+        have_friend = Friend.objects.get(username = username1)
+        current_user_friendlist  = list(have_friend.friend_list)
+        
+        name_of_friendlist = []
+        for i in current_user_friendlist:
+            user = User.objects.get(username = i)
+            name = str(user.first_name) + ' ' + str(user.last_name)
+            name_of_friendlist.append(name)
+
     except:
         current_user_friendlist = []
 
-    return have_friend, current_user_friendlist
+    current_user = []
+    if current_user_friendlist:
+        current_user = zip(current_user_friendlist, name_of_friendlist)
+    else:
+        current_user = []
+
+    return current_user
 
 #for display friendlist
 class FriendView(View):
@@ -427,18 +460,8 @@ class FriendView(View):
     def get(self, request):
         current_user = request.user
         username1 = current_user.username
-        try:
-            have_friend = Friend.objects.get(username = username1)
-            current_user_friendlist  = list(have_friend.friend_list)
 
-        except:
-            current_user_friendlist = []
-
-        current_user = dict()
-        if current_user_friendlist:
-            current_user[username1] = current_user_friendlist
-        else:
-            current_user = dict()
+        current_user = showfrndlist(username1)
         return render(request, self.template_name, {'current_user': current_user})
 
     def post(self, request):
@@ -459,15 +482,11 @@ class FriendView(View):
                     b_user_friendlist = Friend.objects.get(username = selected_user)
                     b_user_friendlist.friend_list.remove(current_user.username)
                     b_user_friendlist.save()
-
                     break
             except:
                 pass
 
-        have_friend, current_user_friendlist = showfrndlist(username1)
-        
-        current_user = dict()
-        current_user[username1] = current_user_friendlist
+        current_user = showfrndlist(username1)
         return render(request, self.template_name, {'current_user': current_user})
 
 #____________________________________________________Group_____________________________________________________
@@ -477,22 +496,24 @@ def request_group(current_user, search_name):
     group_name_list = group_name_list.exclude(admin = current_user.username)
 
     group_status=[]
-    bundle={}
-    
+    # bundle={}
+    bundle=[]
     key = 1
     for group in group_name_list:
+        bundle=[]
+        keyl=[]; groupadminusernamel=[]; groupadminnamel=[];groupnamel = []; statusl=[];grouppricel=[]
         try:
             if current_user.username in group.members:
-                #to store as backup
                 group_name = group.name
-                group_admin = group.admin
+                group_admin = group.admin        
                 group_price = group.price
-                group_status.append([key, group_admin, group_name, 3, group_price])
-                #to pass in html
-                temp1={}; temp1[group_price] = 3
-                temp2={}; temp2[group_name] = temp1
-                bundle[key] = temp2
+
+                user = User.objects.get(username = group_admin)
+                name = str(user.first_name)+' '+str(user.last_name)
+                keyl.append(key); groupadminusernamel.append(group_admin);groupadminnamel.append(name)
+                groupnamel.append(group_name), statusl.append(3), grouppricel.append(group_price)
                 key = key+1
+               
                 #Assumption(group admin cannot formed two group of same name) 
                 group_name_list = group_name_list.exclude(admin = group_admin, name = group_name)
         except:
@@ -503,33 +524,34 @@ def request_group(current_user, search_name):
             group = GroupRequest.objects.get(admin = group1.admin, name = group1.name)
             
             if current_user.username in group.members:
-                group_name = group.name
-                group_admin = group.admin        
-                group_price = group1.price
-                group_status.append([key, group_admin, group_name, 2, group_price])
-                
                 #to pass in html
-                temp1={}; temp1[group_price] = 2
-                temp2={}; temp2[group_name] = temp1
-                bundle[key] = temp2
+                group_name = group1.name
+                group_admin = group1.admin        
+                group_price = group1.price
+
+                user = User.objects.get(username = group_admin)
+                name = str(user.first_name)+' '+str(user.last_name)
+                keyl.append(key); groupadminusernamel.append(group_admin);groupadminnamel.append(name)
+                groupnamel.append(group_name), statusl.append(2), grouppricel.append(group_price)
+             
                 key = key+1
                 group_name_list = group_name_list.exclude(admin = group_admin, name = group_name)
         except:
             pass
 
-    for group in group_name_list:
+    for group in group_name_list:  
         group_name = group.name
-        group_admin = group.admin
+        group_admin = group.admin        
         group_price = group.price
-        group_status.append([key, group_admin, group_name, 1, group_price])
-                
-        temp1={}; temp1[group_price] = 1
-        temp2={}; temp2[group_name] = temp1
-        bundle[key] = temp2
 
+        user = User.objects.get(username = group_admin)
+        name = str(user.first_name)+' '+str(user.last_name)
+        keyl.append(key); groupadminusernamel.append(group_admin);groupadminnamel.append(name)
+        groupnamel.append(group_name), statusl.append(1), grouppricel.append(group_price)
         key = key+1
 
-    return bundle, group_status
+    bundle = zip(keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel)
+    return bundle
 
 class ListGroupView(View):
     template_name = 'premium_user/list_group.html'
@@ -537,7 +559,7 @@ class ListGroupView(View):
     def get(self, request):
         current_user = request.user
         search_name = findGroup(request).lower()
-        bundle , group_status = request_group(current_user, search_name)
+        bundle = request_group(current_user, search_name)
         if bundle:
             return render(request, self.template_name, {'bundle': bundle})
         else:
@@ -549,26 +571,28 @@ class ListGroupView(View):
         username = current_user.username
         search_name = findGroup(request).lower()
       
-        bundle , group_status = request_group(current_user, search_name)
+        bundle = request_group(current_user, search_name)
 
-        for value in group_status:
-            print(request.POST.dict())
+        for keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel in bundle:
             try:
-                if request.POST.dict()[str(value[0])] == "join":
-                    admin = value[1]; name = value[2]
+                
+                if request.POST.dict()[str(keyl)] == "join":
+                    print("Button pressed : ", request.POST.dict()[str(keyl)])
+                    admin = groupadminusernamel; name = groupnamel
 
                     wallet = Wallet.objects.get(username=username)
-                    amount = wallet.amount; price = value[4]
+                    amount = wallet.amount; price = grouppricel
                     
-                    if price <= amount and wallet.transactions_left > 0:
-                        wallet.amount -= price
-                        wallet.transactions_left -= 1
-                        wallet.save()
+                    if ((price <= amount and wallet.transactions_left > 0) or (price == float(0))):
+                        if price != float(0):
+                            wallet.amount -= price
+                            wallet.transactions_left -= 1
+                            wallet.save()
                         try:
                             group = GroupRequest.objects.get(admin = admin, name = name)
                             group.members.append(username); group.save()
                             #bundle update
-                            bundle[value[0]][value[2]][value[4]] = 2
+                            statusl = 2
                             # return render(request, self.template_name, {'bundle': bundle})
                             return HttpResponseRedirect(reverse('premium_user:listgroup'))
                         except:
@@ -578,21 +602,22 @@ class ListGroupView(View):
                             group.members = [] 
                             group.members.append(username); group.save()
                             #bundle update
-                            bundle[value[0]][value[2]][value[4]] = 2
+                            statusl = 2
                             # return render(request, self.template_name, {'bundle': bundle})
                             return HttpResponseRedirect(reverse('premium_user:listgroup'))
+                        
                     else:
                         #message.info NOT WORKING (but not a problem, code working fine)
                         messages.info(request, 'Please recharge.')
                         # return render(request, self.template_name, {'bundle': bundle})
                         return HttpResponseRedirect(reverse('premium_user:listgroup'))
 
-                elif request.POST.dict()[str(value[0])] == "leave":
-                    admin = value[1]; name = value[2]
+                elif request.POST.dict()[str(keyl)] == "leave":
+                    admin = groupadminusernamel; name = groupnamel
                     group = AddGroup.objects.get(admin = admin, name = name)
                     group.members.remove(username)
                     group.save()
-                    bundle[value[0]][value[2]][value[4]] = 1
+                    statusl = 1
                     # return render(request, self.template_name, {'bundle': bundle})
                     return HttpResponseRedirect(reverse('premium_user:listgroup'))
             except:
@@ -721,12 +746,15 @@ def return_bundle_for_request(current_user):
     bundle = {}
     group_request = []
     for i in current_request:
-        name = i.name
+        gname = i.name
         for member in i.members:
-            temp={}
-            temp[name] = member
-            bundle[key] = temp
-            group_request.append([key, name, member])
+            userObj = User.objects.get(username = member)
+            name = str(userObj.first_name) + ' ' + str(userObj.last_name)  
+            temp={}; temp[gname] = member
+            temp1={}; temp1[name] = temp
+            bundle[key] = temp1
+
+            group_request.append([key, gname, member, name])
             key = key + 1
             
     return bundle, group_request
@@ -813,7 +841,53 @@ class DeleteGroupView(View):
         bundle = listowngroup(current_user)
         return render(request, self.template_name, {'bundle': bundle})
 
+def listjoinedgroup(current_user):
+    addgroup = AddGroup.objects.all()
+    groupname = []; adusername = []; adname = []; price = []; gmembers = []; key=[]
+    uname = current_user.username
+    bundle = []; count = 1
+    for i in addgroup:
+        if uname in list(i.members):
+            if i.admin != uname:
+                groupname.append(i.name); adusername.append(i.admin)
+                userObj = User.objects.get(username = i.admin)
+                name = str(userObj.first_name) + ' ' + (userObj.last_name)
+                adname.append(name); price.append(i.price)
+                members = ""
+                for m in list(i.members):
+                    newuserObj = User.objects.get(username = m)
+                    name = str(newuserObj.first_name) + ' ' + (newuserObj.last_name)
+                    members = members + " '"+name+"' "
+                gmembers.append(members)
+                key.append(count)
+                count += 1
 
+    if count > 1:
+        bundle = zip(key, adusername, adname, groupname, price, gmembers)
+    else:
+        bundle =[]
+    return bundle
+
+class JoinedGroupView(View):
+    template_name = 'premium_user/yourjoinedgroup.html'
+    
+    def get(self, request):
+        current_user = request.user
+        bundle = listjoinedgroup(current_user)
+        return render(request, self.template_name, {'bundle': bundle})
+
+    def post(self, request):
+        current_user = request.user
+        bundle = listjoinedgroup(current_user)
+        for key, adusername, adname, groupname, price, gmembers in bundle:
+            try:
+                if request.POST.dict()[str(key)] == "leave":
+                    group = AddGroup.objects.get(admin = adusername, name = groupname)
+                    group.members.remove(current_user.username)
+                    group.save()
+            except:
+                pass
+        return HttpResponseRedirect(reverse('premium_user:yourjoinedgroup'))
 #______________________________________________________ wallet_____________________________________________
 
 class WalletView(View):
@@ -1023,8 +1097,9 @@ def saveMessage(self, request, sender, receiver):
         getmessage = search_msg
         search_msg = ""
         time_stamp = datetime.now(tz=None)
-
-        update_message = "From " + str(sender)+" : "+ str(getmessage) + '\n'+ 'At : '+ str(time_stamp)
+        userObj = User.objects.get(username = sender)
+        sendername = str(userObj.first_name) + ' ' + str(userObj.last_name)
+        update_message = "From " + str(sendername)+" : "+ str(getmessage) + '\n'+ 'At : '+ str(time_stamp)
         try:
             user_message = Message.objects.get(sender = sender, receiver = receiver)
             user_message.messages.append(update_message)
@@ -1046,11 +1121,19 @@ class InboxView(View):
         username1 = current_user.username
         friendlist = getfriendlist(username1)
         current_user = dict()
+            
+        userinfo=dict()
         if friendlist:
-            current_user[username1] = friendlist
+            uname = []
+            for i in friendlist:
+                userObj = User.objects.get(username = i)
+                name = str(userObj.first_name) + ' ' + str(userObj.last_name)
+                uname.append(name)
+            info = zip(friendlist, uname)
+            userinfo[username1] = info
         else:
-            current_user = dict()
-        return render(request, self.template_name, {'current_user': current_user})
+            userinfo = dict()
+        return render(request, self.template_name, {'userinfo': userinfo})
 
     def post(self, request):
         current_user = request.user

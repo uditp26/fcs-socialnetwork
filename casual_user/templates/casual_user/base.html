@@ -33,14 +33,28 @@
                             </a>
                         </li>
                         
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">&nbsp;<span class="glyphicon glyphicon-user"></span> Friend <span class="caret"></span></a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a href="{% url 'casual_user:friend' %}">Friend List</a>
+                                </li>
+
+                                <li>
+                                    <a href="{% url 'casual_user:friendrequest' %}">Friend Request</a>
+                                </li>
+                                
+                            </ul>
+                        </li>
+
                         <li class="">
-                            <a href="{% url 'casual_user:friend' %}">
-                                <span class="glyphicon glyphicon-shopping-cart" aria-hidden="true"></span>&nbsp; Friends
+                            <a href="{% url 'casual_user:yourjoinedgroup' %}">
+                                <span class="glyphicon glyphicon-comment" aria-hidden="true"></span>&nbsp; Group
                             </a>
                         </li>
 
                         <li class="">
-                            <a href="#">
+                            <a href="{% url 'casual_user:inbox' %}">
                                 <span class="glyphicon glyphicon-comment" aria-hidden="true"></span>&nbsp; Messages
                             </a>
                         </li>

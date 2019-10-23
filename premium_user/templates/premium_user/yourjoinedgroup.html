@@ -1,10 +1,10 @@
-{% extends 'casual_user/base.html' %}
+{% extends 'premium_user/base.html' %}
 
 {% block body %}
 
 <div style="padding-bottom: 1cm">
 	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
-        <h1 style="text-indent: 15cm"><font color="white">Search result for the query</font></h1>
+        <h1 style="text-indent: 15cm"><font color="white">Your jonined group</font></h1>
 	</div>
 </div>
 
@@ -18,6 +18,7 @@
                         <th class="text-center text-uppercase">Group Admin</th>
                         <th class="text-center text-uppercase">Group Name</th>
                         <th class="text-center text-uppercase">Group Price</th>
+                        <th class="text-center text-uppercase">Group Members</th>
                         <th class="text-center text-uppercase">Join Group / Leave Group</th>
                     </tr>
                 </thead>
@@ -26,21 +27,15 @@
                         {% csrf_token %}
 
                         
-                        {% for keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel in bundle %}
+                        {% for key, adusername, adname, groupname, price, gmembers in bundle %}
                             <tr>
-                                <td><a href="{% url 'casual_user:casualuserdetail' groupadminusernamel %}">{{ groupadminnamel }}</a></td>
-                                <td>{{ groupnamel }}</td>
-                                <td>{{ grouppricel }}</td>
+                                <td><a href="{% url 'premium_user:premiumuserdetail' adusername %}">{{ adname }}</a></td>
+                                <td>{{ groupname }}</td>
+                                <td>{{ price }}</td>
+                                <td>{{ gmembers }}</td>
+                                
                                 <td>
-                                    {% if statusl == 1 %}
-                                        <button name = {{ keyl }} type="submit" class="btn btn-default" value="join">Join</button>
-                                    
-                                    {% elif statusl == 2 %}
-                                        <button name = {{ keyl }} type="submit" class="btn btn-default" value="pending" disabled>Pending</button>
-                                    
-                                    {% else %}
-                                        <button name = {{ keyl }} type="submit" class="btn btn-default" value="leave">Leave</button>
-                                    {% endif %}
+                                    <button name = {{ key }} type="submit" class="btn btn-default" value="leave">Leave</button>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -50,7 +45,7 @@
         {% else %}
             <div class="card" style="padding: 1cm">
                 <div class="card-header">
-                    <h2>No new group to join yet!</h2>
+                    <h2>Not joined any group yet!</h2>
                 </div>
             </div>
         {% endif %}
