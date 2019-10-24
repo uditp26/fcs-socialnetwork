@@ -13,6 +13,12 @@ class CasualUser(models.Model):
 
     def __str__(self):
         return self.email
+    
+    # def name_to_url(self):
+    #     name = str(self.email).split('@')[0]
+    #     return name
+    def name_to_url(self):
+        return user
 
 class Post(models.Model):
     username = models.CharField(max_length=30)

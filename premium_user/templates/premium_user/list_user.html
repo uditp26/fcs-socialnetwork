@@ -34,7 +34,7 @@
                     {% for key1, value1 in bundle.items %}
                         {% for key2, value2 in value1.items %}
                             <tr>
-                                <td>{{key2 }}</td>
+                                <td><a href="{% url 'premium_user:premiumuserdetail' key1.username %}">{{ key2 }}</a></td>
                                 <td>
                                     {% if value2 == 0 %}
                                         <button name = {{ key1 }} type="submit" class="btn btn-default" value="Unfriend">Unfriend</button>

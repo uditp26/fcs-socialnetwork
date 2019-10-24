@@ -89,12 +89,6 @@ class LoginFormView(View):
 
                 if user.is_active and int(radio_btn) == user.user_type:
                     login(request, user)
-                    # redirect to respective page
-                    
-                    # if radio_btn == '1':
-                    #     return redirect('casual_user:homepage')
-                    # elif radio_btn == '2':
-                    #     return redirect('premium_user:myprofile')
 
                     f_list = FailedLogin.objects.filter(username=username)
 
@@ -111,7 +105,7 @@ class LoginFormView(View):
                             if radio_btn == '1':
                                 return redirect('casual_user:homepage')
                             elif radio_btn == '2':
-                                return redirect('premium_user:myprofile')
+                                return redirect('premium_user:homepage')
                             else:
                                 return redirect('')
                     else:
@@ -121,7 +115,7 @@ class LoginFormView(View):
                         if radio_btn == '1':
                             return redirect('casual_user:homepage')
                         elif radio_btn == '2':
-                            return redirect('premium_user:myprofile')
+                            return redirect('premium_user:homepage')
                         else:
                             return redirect('')
                 else:

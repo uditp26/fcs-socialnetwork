@@ -9,11 +9,16 @@ urlpatterns = [
     url(r'myprofile/$', views.ProfileView.as_view(), name='myprofile'),
     url(r'editprofile/$', views.EditProfileFormView.as_view(), name='editprofile'),
     url(r'listuser/$', views.ListUserView.as_view(), name='listuser'),
+    path('listuser/<slug:username>/', views.UserProfileView.as_view(), name='userprofile'),
+
+    url(r'friendrequest/$', views.FriendRequestView.as_view(), name='friendrequest'),
     url(r'friend/$', views.FriendView.as_view(), name='friend'),
 
+    #group
     url(r'listgroup/$', views.ListGroupView.as_view(), name='listgroup'),
-    
+    url(r'yourjoinedgroup/$', views.JoinedGroupView.as_view(), name='yourjoinedgroup'),
      
+    #wallet
     url(r'mywallet/$', views.WalletView.as_view(), name="wallet"),
     url(r'mywallet/otpverify/$', views.OTPVerificationFormView.as_view(), name="otpverify"),
     url(r'mywallet/addmoney/$', views.AddMoneyFormView.as_view(), name="addmoney"),
@@ -21,4 +26,7 @@ urlpatterns = [
     url(r'mywallet/requestmoney/$', views.RequestMoneyFormView.as_view(), name="requestmoney"),
     url(r'mywallet/pendingrequests/$', views.PendingRequestsView.as_view(), name="pendingrequests"),
     url(r'mywallet/nofriends/$', views.NofriendsView.as_view(), name="nofriends"),
+
+    #post
+    url(r'postcontent/$', views.PostContentView.as_view(), name='postcontent'),
 ]

@@ -11,9 +11,13 @@ class PremiumUser(models.Model):
     gender = models.SmallIntegerField()
     phone = PhoneNumberField(blank=True)
     email = models.EmailField()
-
+    
     def __str__(self):
         return self.email
+
+    def name_to_url(self):
+        name = str(self.email).split('@')[0]
+        return name
 
 class AddGroup(models.Model):
     admin = models.CharField(max_length=30)

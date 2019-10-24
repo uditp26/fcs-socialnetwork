@@ -23,13 +23,11 @@
                     <form action="#" method="post"> 
                         {% csrf_token %}
                         
-                        {% for key, value in current_user.items %}
-                            {% for i in value %}:
+                        {% for username, name in current_user %}
                             <tr>
-                                <td>{{ i }}</td>
-                                <td> <input type="submit" name= {{ i }} class="btn btn-primary" value="Unfriend" /> </td>
+                                <td><a href="{% url 'premium_user:userprofile' username %}">{{ name }}</a></td>
+                                <td> <input type="submit" name= {{ username }} class="btn btn-primary" value="Unfriend" /> </td>
                             </tr>
-                            {% endfor %}
                         {% endfor %}
                     </form>
                 </tbody>
@@ -41,7 +39,6 @@
                 </div>
             </div>
         {% endif %}
-
     </div>
 </div> 
 {% endblock %}
