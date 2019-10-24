@@ -389,6 +389,7 @@ def showfrndlist(username1):
             name_of_friendlist.append(name)
 
     except:
+        have_friend =  Friend()
         current_user_friendlist = []
 
     current_user = []

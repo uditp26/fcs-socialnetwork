@@ -138,6 +138,7 @@ def getgroupdetails(current_user):
     try:
         groups = AddGroup.objects.filter(admin = current_user.username)
         groupplan = GroupPlan.objects.get(customer = current_user.username)
+        print("YES")
         groupinfo = {}
         key = 1; anotherkey  = 11
         for group in groups:
@@ -159,6 +160,7 @@ def getgroupdetails(current_user):
         bundle[anotherkey] = groupinfo; anotherkey += 1
         bundle[anotherkey] = groupplaninfo
     except:
+        bundle = {}
         pass
     return bundle
          
@@ -443,6 +445,7 @@ def showfrndlist(username1):
             name_of_friendlist.append(name)
 
     except:
+        have_friend = Friend() 
         current_user_friendlist = []
 
     current_user = []
@@ -717,6 +720,10 @@ class AddGroupFormView(View):
             if price < 0:
                 form.add_error('price', "Only allowed positive number.")
                 return render(request, self.template_name, {'form': form})
+            if price <= 0 and gtype == '2':
+                form.add_error('price', "Have to put some amount for creating commercial group.")
+                return render(request, self.template_name, {'form': form})
+                
             try:
                 group= Group.objects.get(admin = current_user.username)
                 grouplist = group.group_list
