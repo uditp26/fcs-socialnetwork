@@ -5,7 +5,7 @@ from django.http import Http404
 from casual_user.models import Wallet, Transaction, Request, Post, Friend, FriendRequest, CasualUser, Timeline
 from login.models import User
 from .models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message
-from .forms import AddGroupForm, GroupPlanForm, AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, OTPVerificationForm
+from .forms import AddGroupForm, GroupPlanForm, AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, GroupPlanAtRegTimeForm, AddMoneyForReg, OTPVerificationForm
 
 from django.contrib.auth import logout
 from django.http import HttpResponse, HttpResponseRedirect
@@ -167,6 +167,7 @@ def getgroupdetails(current_user):
     try:
         groups = AddGroup.objects.filter(admin = current_user.username)
         groupplan = GroupPlan.objects.get(customer = current_user.username)
+        print("YES")
         groupinfo = {}
         key = 1; anotherkey  = 11
         for group in groups:
@@ -183,11 +184,12 @@ def getgroupdetails(current_user):
         current_date = datetime.now().date()
         rechargedate = groupplan.recharge_on.date()
         days = 30 - int((current_date - rechargedate).days)
-        noofgroups = groupplan.noofgroup
+        noofgroups = int(groupplan.noofgroup)
         groupplaninfo[days] = noofgroups
         bundle[anotherkey] = groupinfo; anotherkey += 1
         bundle[anotherkey] = groupplaninfo
     except:
+        bundle = {}
         pass
     return bundle
 
@@ -402,7 +404,6 @@ class ListUserView(View):
                     b_user_friendlist = Friend.objects.get(username = selected_user)
                     b_user_friendlist.friend_list.remove(current_user.username)
                     b_user_friendlist.save()
-
                     break
             except:
                 pass
@@ -485,6 +486,7 @@ def showfrndlist(username1):
             name_of_friendlist.append(name)
 
     except:
+        have_friend = Friend() 
         current_user_friendlist = []
 
     current_user = []
@@ -522,8 +524,7 @@ class FriendView(View):
         username1 = current_user.username
         current_user_friendlist, have_friend = showfrndlist(username1)
 
-        for i,j in current_user_friendlist:
-           
+        for i,j in current_user_friendlist:  
             try:
                 selected_user = i
                 
@@ -776,6 +777,10 @@ class AddGroupFormView(View):
             if price < 0:
                 form.add_error('price', "Only allowed positive number.")
                 return render(request, self.template_name, {'form': form})
+            if price <= 0 and gtype == '2':
+                form.add_error('price', "Have to put some amount for creating commercial group.")
+                return render(request, self.template_name, {'form': form})
+                
             try:
                 group= Group.objects.get(admin = current_user.username)
                 grouplist = group.group_list
@@ -1068,7 +1073,7 @@ class SendMoneyFormView(View):
         if len(friend_list) > 0:
             return render(request, self.template_name, {'form': form})
         else:
-            return redirect('casual_user:nofriends')
+            return redirect('premium_user:nofriends')
         return render(request, self.template_name, {'form': form})
 
     def post(self, request):
@@ -1117,7 +1122,7 @@ class RequestMoneyFormView(View):
         if len(friend_list) > 0:
             return render(request, self.template_name, {'form': form})
         else:
-            return redirect('casual_user:nofriends')
+            return redirect('premium_user:nofriends')
 
     def post(self, request):
         current_user = request.user
@@ -1485,6 +1490,107 @@ class SettingsView(View):
         
         user_timeline.save()
         return HttpResponseRedirect(reverse('premium_user:settings'))
+#______________________________________________________Registration added______________________________________
+#new registration of premium_user so send to new page...... 
+
+@method_decorator(decorators, name='dispatch')
+class GroupPlanAtRegFormView(View):
+    form_class = GroupPlanAtRegTimeForm
+    template_name = 'premium_user/groupplanatregtime_form.html'
+    
+    def get(self, request):
+        current_user = request.user
+        form = self.form_class(request.POST)
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        current_user = request.user
+        form = self.form_class(request.POST)
+        username = current_user.username
+
+        if form.is_valid():
+            plantype = form.cleaned_data['plantype']
+            
+            wallet = Wallet.objects.get(username = username)
+            amount = wallet.amount
+
+            price, noofgroup = priceofplan(int(plantype))
+
+
+            if wallet.transactions_left == 0:
+                form.add_error('plantype', "You don't have any transactions remaining for the month.")
+                return HttpResponseRedirect(reverse('premium_user:groupplanforreg'))
+            else:
+                
+                if amount >= price:
+                    amount -= price
+                    wallet.transactions_left -= 1
+                    wallet.amount = amount
+                    wallet.save()
+
+                    current_date = datetime.now().date()
+                    try:
+                        groupplan = GroupPlan.objects.get(customer = username)
+                        groupplan.recharge_on = current_date; groupplan.plantype = plantype
+                        groupplan.noofgroup += noofgroup
+                        groupplan.save()
+                    except:
+                        GroupPlan(customer = username, recharge_on = current_date, plantype = plantype, noofgroup = noofgroup).save()
+                        
+                    name = current_user.first_name + ' ' + current_user.last_name
+                    return render(request, 'login/registrationsuccess.html', {'name': name})
+
+                else:
+                    print("NO")
+                    form.add_error('plantype', "You don't have sufficient balance.")
+                    HttpResponseRedirect(reverse('premium_user:groupplanforreg'))
+
+        return HttpResponseRedirect(reverse('premium_user:groupplanforreg'))
+
+@method_decorator(decorators, name='dispatch')
+class AddMoneyForRegFormView(View):
+    form_class = AddMoneyForReg
+    template_name = 'premium_user/addmoneyforreg.html'
+
+    def get(self, request):
+        form = self.form_class(None)
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        form = self.form_class(request.POST)
+        current_user = request.user
+
+        if form.is_valid():
+            amount = form.cleaned_data['amount']
+            username = current_user.username
+
+            # Implement OTP functionality here
+
+            wallet = Wallet.objects.get(username=username)
+
+            if wallet.transactions_left == 0:
+                form.add_error('amount', "You don't have any transactions remaining for the month.")
+            else: 
+                wallet.amount += float(amount)
+                wallet.transactions_left -= 1
+                wallet.save()
+
+                # Add to Transactions table
+                Transaction(sender=username, receiver=username, amount=amount, timestamp=timezone.now()).save()
+
+                w_dict = dict() 
+
+                w_dict['Account Type'] = wallet.user_type
+                w_dict['Amount'] = wallet.amount
+                w_dict['Remaining Transactions'] = wallet.transactions_left
+
+                
+                return HttpResponseRedirect(reverse('premium_user:groupplanforreg'))
+
+        return HttpResponseRedirect(reverse('premium_user:addmoneyforreg'))
+
+
+#_____________________________________________________________________________________________________
 
 @method_decorator(decorators, name='dispatch')
 class LogoutView(View):
@@ -1492,3 +1598,4 @@ class LogoutView(View):
     def get(self, request):
         logout(request)
         return HttpResponseRedirect(reverse('applogin:login'))
+

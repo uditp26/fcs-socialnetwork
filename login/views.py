@@ -36,8 +36,8 @@ from .forms import LoginForm, RequestpwdForm, ResetpwdForm, RegistrationForm, Pa
 
 from .models import User, FailedLogin
 
-from casual_user.models import CasualUser, Wallet, Timeline
-from premium_user.models import PremiumUser
+from casual_user.models import CasualUser, Wallet, Timeline, Friend
+from premium_user.models import PremiumUser, GroupPlan
 
 import time
 
@@ -114,8 +114,20 @@ class LoginFormView(View):
                         # redirect to respective page
                         if radio_btn == '1':
                             return redirect('casual_user:homepage')
+                        # elif radio_btn == '2':
+                        #     return redirect('premium_user:homepage')
+                        
                         elif radio_btn == '2':
-                            return redirect('premium_user:homepage')
+                            try:
+                                GroupPlan.objects.get(customer = username)
+                                wallet = Wallet.objects.get(username = username)
+                                wallet.transactions_left = 30
+                                wallet.save()
+                                
+                                return redirect('premium_user:homepage')
+                            except:
+                                return redirect('premium_user:groupplanforreg')
+
                         else:
                             return redirect('')
                 else:
@@ -170,6 +182,7 @@ class RegistrationFormView(View):
 
             new_user, username = createNewUser(email, password, first_name, last_name, int(account_type))
             Timeline(username=username, level=1).save()
+            Friend(username=username, friend_list=[]).save()
 
             if account_type == '1':
                 c_user = CasualUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email)
@@ -180,8 +193,10 @@ class RegistrationFormView(View):
                 p_user = PremiumUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email)
                 p_user.save()
                 # add entry to premium user table
-                Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=30).save()
-                return render(request, 'login/registrationsuccess.html', {'username': username})
+                wallet = Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=30)
+                wallet.save()
+                # return HttpResponseRedirect(reverse('login:login'))
+                return render(request, 'login/registrationsuccess.html', {'username': username})   
             else:
                 # add entry to commercial user table
                 Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=10000).save()
