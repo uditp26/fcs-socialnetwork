@@ -277,9 +277,9 @@ class ListUserView(View):
 
     def post(self, request):
         current_user = request.user
-        user_name_list = user_friendlist(current_user, request)
+        bundle, user_name_list = user_friendlist(current_user, request)
 
-        for i,j in user_name_list:
+        for i in user_name_list:
             try:
                 selected_user = i.username
                 if request.POST.dict()[selected_user] == "Add Friend":
