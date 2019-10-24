@@ -72,4 +72,11 @@ class Transaction(models.Model):
     def __str__(self):
         return self.sender
 
+class Timeline(models.Model):
+    username = models.CharField(max_length=30)
+    level = models.SmallIntegerField(default=1)
+
+    def __str__(self):
+        return self.username
+
 

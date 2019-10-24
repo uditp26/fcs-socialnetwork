@@ -36,7 +36,7 @@ from .forms import LoginForm, RequestpwdForm, ResetpwdForm, RegistrationForm, Pa
 
 from .models import User, FailedLogin
 
-from casual_user.models import CasualUser, Wallet
+from casual_user.models import CasualUser, Wallet, Timeline
 from premium_user.models import PremiumUser
 
 import time
@@ -169,6 +169,7 @@ class RegistrationFormView(View):
             password = form.cleaned_data['password']
 
             new_user, username = createNewUser(email, password, first_name, last_name, int(account_type))
+            Timeline(username=username, level=1).save()
 
             if account_type == '1':
                 c_user = CasualUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email)

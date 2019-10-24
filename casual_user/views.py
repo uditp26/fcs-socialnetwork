@@ -2,7 +2,7 @@ from django.shortcuts import render, reverse, redirect
 from django.views.generic import View
 from django.http import Http404
 
-from .models import CasualUser, Post, Friend, Wallet, Request, Transaction, FriendRequest
+from .models import CasualUser, Post, Friend, Wallet, Request, Transaction, FriendRequest, Timeline
 from login.models import User
 from premium_user.models import AddGroup, GroupRequest, PremiumUser, Message, Group
 
@@ -15,6 +15,9 @@ from django import forms
 from .forms import AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, OTPVerificationForm
 
 from datetime import datetime
+
+from django.utils import timezone
+import pytz
 
 import time
 from django.core.mail import send_mail
@@ -42,9 +45,10 @@ def savePost(request, current_user, visitor=""):
     scope = request.POST.dict()['level']
 
     if visitor != "":
-        post += "\n\n\t\t\t" + "Posted By: " + str(visitor)
+        visitor = User.objects.get(username=visitor).first_name + " " + User.objects.get(username=visitor).last_name
+        post += " \t\t\t Posted By: " + str(visitor)
 
-    timestamp = datetime.now(tz=None)
+    timestamp = timezone.now()
     user_posts = Post.objects.filter(username = str(current_user))
 
     if len(user_posts) > 0:
@@ -309,9 +313,9 @@ class ListUserView(View):
 
     def post(self, request):
         current_user = request.user
-        bundle, user_name_list = user_friendlist(current_user, request)
+        user_name_list = user_friendlist(current_user, request)
 
-        for i in user_name_list:
+        for i,j in user_name_list:
             try:
                 selected_user = i.username
                 if request.POST.dict()[selected_user] == "Add Friend":
@@ -436,7 +440,18 @@ def showfrndlist(username1):
     else:
         current_user = []
 
-    return current_user
+    return current_user, have_friend
+
+def checkPrivacySettings(friends_zip):
+    level_list = []
+    uname_list = []
+    name_list = []
+    for username, name in friends_zip:
+        uname_list.append(username)
+        name_list.append(name)
+        level_list.append(str(Timeline.objects.get(username=username).level))
+
+    return zip(uname_list, name_list, level_list)
 
 #for display friendlist
 @method_decorator(decorators, name='dispatch')
@@ -445,21 +460,18 @@ class FriendView(View):
 
     def get(self, request):
         current_user = request.user
-        username1 = current_user.username
-
-        current_user = showfrndlist(username1)
-        return render(request, self.template_name, {'current_user': current_user})
+        friends_zip, have_friend = showfrndlist(current_user)
+        friends_zip = checkPrivacySettings(friends_zip)
+        return render(request, self.template_name, {'current_user': friends_zip})
 
     def post(self, request):
         print(request.POST.dict())
         current_user = request.user
         username1 = current_user.username
+        current_user_friendlist, have_friend = showfrndlist(username1)
 
-        print(username1)
-
-        have_friend, current_user_friendlist = showfrndlist(username1)
-
-        for i in current_user_friendlist:
+        for i,j in current_user_friendlist:
+            print(request.POST.dict())
             try:
                 selected_user = i
 
@@ -484,8 +496,7 @@ class FriendView(View):
             except:
                 pass
 
-        current_user = showfrndlist(username1)
-        return render(request, self.template_name, {'current_user': current_user})
+        return HttpResponseRedirect(reverse('casual_user:friend'))
 
 @method_decorator(decorators, name='dispatch')
 class WalletView(View):
@@ -684,49 +695,6 @@ class RequestMoneyFormView(View):
 
         return render(request, self.template_name, {'form': form})
 
-@method_decorator(decorators, name='dispatch')
-class PendingRequestsView(View):
-    template_name = 'casual_user/pendingrequests.html'
-
-    def get(self, request):
-        current_user = request.user
-        pay_requests = Request.objects.filter(receiver=current_user, status=0)
-        bundle = dict()
-        bundle['requests'] = pay_requests
-        return render(request, self.template_name, {'pay_req': bundle})
-
-    def post(self, request):
-        current_user = request.user
-        all_requests = Request.objects.filter(receiver=current_user, status=0)
-
-        for req in all_requests:
-            if request.POST.dict().get(req.request_id) is not None:
-                curr_request = Request.objects.get(request_id=req.request_id)
-                if request.POST.dict()[req.request_id] == "Pay":
-                    sender_wallet = Wallet.objects.get(username=current_user)
-                    receiver_wallet = Wallet.objects.get(username=req.sender)
-                    if sender_wallet.amount >= req.amount and receiver_wallet.transactions_left > 0:
-                        sender_wallet.amount -= req.amount
-                        receiver_wallet.amount += req.amount
-                        receiver_wallet.transactions_left -= 1
-                        sender_wallet.save()
-                        receiver_wallet.save()
-                        curr_request.status = 1
-                        curr_request.save()
-                        Transaction(sender=current_user, receiver=req.sender, amount=req.amount, timestamp=datetime.now(tz=None)).save()
-                    else:
-                        # If requested amount is greater than current balance, the request is dropped.
-                        curr_request.status = 2
-                        curr_request.save()
-                elif request.POST.dict()[req.request_id] == "Decline":
-                    curr_request.status = 2
-                    curr_request.save()
-
-        pay_requests = Request.objects.filter(receiver=current_user, status=0)
-        bundle = dict()
-        bundle['requests'] = pay_requests
-        return render(request, self.template_name, {'pay_req': bundle})
-
 #_________________________________________________Group________________________________________________________
 
 #function needed in group search 
@@ -735,12 +703,13 @@ def request_group(current_user, search_name):
     group_name_list = group_name_list.exclude(admin = current_user.username)
 
     group_status=[]
-    # bundle={}
+    
+
     bundle=[]
     key = 1
+    keyl=[]; groupadminusernamel=[]; groupadminnamel=[];groupnamel = []; statusl=[];grouppricel=[]
     for group in group_name_list:
-        bundle=[]
-        keyl=[]; groupadminusernamel=[]; groupadminnamel=[];groupnamel = []; statusl=[];grouppricel=[]
+        
         try:
             if current_user.username in group.members:
                 group_name = group.name
@@ -788,8 +757,8 @@ def request_group(current_user, search_name):
         keyl.append(key); groupadminusernamel.append(group_admin);groupadminnamel.append(name)
         groupnamel.append(group_name), statusl.append(1), grouppricel.append(group_price)
         key = key+1
-
-    bundle = zip(keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel)
+    if keyl:
+        bundle = zip(keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel)
     return bundle
 
 @method_decorator(decorators, name='dispatch')
@@ -943,7 +912,7 @@ class PendingRequestsView(View):
                         receiver_wallet.save()
                         curr_request.status = 1
                         curr_request.save()
-                        Transaction(sender=current_user, receiver=req.sender, amount=req.amount, timestamp=datetime.now(tz=None)).save()
+                        Transaction(sender=current_user, receiver=req.sender, amount=req.amount, timestamp=timezone.now()).save()
                     else:
                         # If requested amount is greater than current balance, the request is dropped.
                         curr_request.status = 2
@@ -956,7 +925,7 @@ class PendingRequestsView(View):
         # bundle = dict()
         # bundle['requests'] = pay_requests
         # return render(request, self.template_name, {'pay_req': bundle})
-        return HttpResponseRedirect('')
+        return HttpResponseRedirect(reverse('premium_user:pendingrequests'))
 
 @method_decorator(decorators, name='dispatch')
 class OTPVerificationFormView(View):
@@ -994,7 +963,7 @@ class OTPVerificationFormView(View):
                     wallet.save()
 
                     # Add to Transactions table
-                    Transaction(sender=username, receiver=username, amount=float(request.session['amount']), timestamp=datetime.now(tz=None)).save()
+                    Transaction(sender=username, receiver=username, amount=float(request.session['amount']), timestamp=timezone.now(tz=None)).save()
 
                     request.session.pop('amount', None)
                     request.session.modified = True
@@ -1021,7 +990,7 @@ class OTPVerificationFormView(View):
                     receiver_wallet.save()
 
                     # Add to Transactions table
-                    Transaction(sender=current_user, receiver=request.session['send_to'], amount=float(request.session['amount']), timestamp=datetime.now(tz=None)).save()
+                    Transaction(sender=current_user, receiver=request.session['send_to'], amount=float(request.session['amount']), timestamp=timezone.now()).save()
 
                     request.session.pop('amount', None)
                     request.session.pop('send_to', None)
@@ -1072,13 +1041,17 @@ class PostContentView(View):
 
     def get(self, request):
         owner = request.session.get('owner')
-        visitor = request.user 
-        return render(request, template_name, {'owner':owner, 'visitor':visitor})
+        owner = User.objects.get(username=owner).first_name + " " + User.objects.get(username=owner).last_name
+        visitor = request.user
+        visitor = User.objects.get(username=visitor).first_name + " " + User.objects.get(username=visitor).last_name
+        return render(request, self.template_name, {'owner':owner, 'visitor':visitor})
 
     def post(self, request):
         owner = request.session.get('owner')
         visitor = request.user
         savePost(request, owner, visitor)
+        request.session.pop('trans_type', None)
+        request.session.modified = True
         return redirect('casual_user:friend')
 
 @method_decorator(decorators, name='dispatch')
@@ -1087,6 +1060,128 @@ class NofriendsView(View):
 
     def get(self, request):
         return render(request, self.template_name)
+#_________________________________________________Message______________________________________________________
+def getfriendlist(username1):
+    try:
+        have_friend = Friend.objects.get(username = username1)
+        friendlist = []
+        for i in have_friend.friend_list:
+            userObj = User.objects.get(username= i)
+            if userObj.user_type is not 1:
+                friendlist.append(i)
+
+    except:
+        friendlist = []
+    return friendlist
+
+class Saveuser:
+    username = ""
+usernameObj = Saveuser() 
+
+@method_decorator(decorators, name='dispatch')
+class InboxView(View):
+    template_name = 'casual_user/inbox.html'
+
+    def get(self, request):
+        current_user = request.user
+        username1 = current_user.username
+        friendlist = getfriendlist(username1)
+        current_user = dict()
+            
+        userinfo=dict()
+        if friendlist:
+            uname = []
+            for i in friendlist:
+                userObj = User.objects.get(username = i)
+                name = str(userObj.first_name) + ' ' + str(userObj.last_name)
+                uname.append(name)
+            info = zip(friendlist, uname)
+            userinfo[username1] = info
+        else:
+            userinfo = dict()
+        return render(request, self.template_name, {'userinfo': userinfo})
+
+    def post(self, request):
+        current_user = request.user
+        username1 = current_user.username
+        friendlist = getfriendlist(username1)
+        
+        for i in friendlist:
+            try:
+                selected_user = i
+
+                if request.POST.dict()[selected_user] == "View Message":
+                    usernameObj.username = ""
+                    usernameObj.username = selected_user
+            except:
+                pass
+        return redirect('casual_user:chat')
+
+def showmessages(sender, receiver):
+    count = 0
+    try:
+        messagebundle1 = Message.objects.get(sender = sender, receiver = receiver)
+        messages1 = list(messagebundle1.messages);  timestamp1 = list(messagebundle1.timestamp)
+    except:
+        messages1 = []; timestamp1 = []; count += 1
+        pass
+    try:
+        messagebundle2 = Message.objects.get(sender = receiver, receiver = sender)
+        messages2 = list(messagebundle2.messages); timestamp2 = list(messagebundle2.timestamp)
+        
+    except:
+        messages2 = []; timestamp2 = []
+        count += 1
+        pass
+    if count != 2:
+        messages = messages1 + messages2
+        timestamp = timestamp1 + timestamp2
+        updatemessages = [x for _,x in sorted(zip(timestamp,messages), reverse= True)]
+    else:
+        updatemessages =  []
+    return updatemessages
+
+@method_decorator(decorators, name='dispatch')
+class ChatView(View):
+    template_name = 'casual_user/chat.html'
+    def get(self, request):
+        current_user = request.user
+        username1 = current_user.username; sender = username1
+        receiver = usernameObj.username
+        
+        updatemessages = showmessages(sender, receiver)
+
+        msg = {'updatemessages':updatemessages}
+        return render(request, self.template_name, {'msg': msg})
+
+@method_decorator(decorators, name='dispatch')
+class SettingsView(View):
+    template_name = 'casual_user/settings.html'
+
+    def get(self, request):
+        current_user = request.user
+        if str(current_user) is 'AnonymousUser':
+            raise Http404
+        else:
+            level = Timeline.objects.get(username=current_user).level
+            if level:
+                level = "Friends"
+            else:
+                level = "Only Me"
+            return render(request, self.template_name, {'level': level})
+
+    def post(self, request):
+        current_user = request.user
+        scope = request.POST.dict()['level']
+        user_timeline = Timeline.objects.get(username=str(current_user))
+
+        if scope == "0":
+            user_timeline.level = 0
+        elif scope == "1":
+            user_timeline.level = 1
+        
+        user_timeline.save()
+        return HttpResponseRedirect(reverse('casual_user:settings'))
 
 
 @method_decorator(decorators, name='dispatch')

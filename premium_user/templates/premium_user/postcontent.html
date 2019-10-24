@@ -4,8 +4,8 @@
 
 <div style="padding-bottom: 1cm">
 	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
-        <h1 style="text-indent: 15cm"><font color="white">Welcome</font></h1>
-        <h4 style="text-indent: 15cm"><font color="white">{{ bundle.name }}</font></h4>
+        <h1 style="text-indent: 15cm"><font color="white">Welcome {{ visitor }}</font></h1>
+        <h4 style="text-indent: 15cm"><font color="white">Post content below for {{ owner }}</font></h4>
 	</div>
 </div>
 
@@ -33,32 +33,4 @@
         </div>
     </div>
 
-    {% if bundle.posts %}
-
-        {% for post in bundle.posts %}
-            <div class="card bg-light text-dark" style="padding: 1cm">
-                <div class="card-header">
-                </div>
-                <div class="card-body">
-                    {{ post }}
-                </div>
-                <div class="card-footer">
-                </div>
-            </div>
-        {% endfor %}
-
-    {% else %}
-
-        <div class="card" style="padding: 1cm">
-            <div class="card-header">
-                <h2>No posts yet!</h2>
-            </div>
-            <div class="card-body">
-            </div>
-            <div class="card-footer">
-            
-            </div>
-        </div>
-    {% endif %}
-</div> 
 {% endblock %}

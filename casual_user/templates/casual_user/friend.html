@@ -23,10 +23,14 @@
                     <form action="#" method="post"> 
                         {% csrf_token %}
                         
-                        {% for username, name in current_user %}
+                        {% for username, name, level in current_user %}
                             <tr>
                                 <td><a href="{% url 'casual_user:userprofile' username %}">{{ name }}</a></td>
-                                <td> <input type="submit" name= {{ username }} class="btn btn-success" value="Post on Timeline"/> &nbsp; <input type="submit" name= {{ username }} class="btn btn-danger" value="Unfriend" /> </td>
+                                {% if level == "1" %}
+                                    <td> <input type="submit" name= {{ username }} class="btn btn-success" value="Post on Timeline"/> &nbsp; <input type="submit" name= {{ username }} class="btn btn-danger" value="Unfriend" /> </td>
+                                {% else %}
+                                    <td> <input type="submit" name= {{ username }} class="btn btn-danger" value="Unfriend" /> </td>
+                                {% endif %}
                             </tr>
                         {% endfor %}
                     </form>
@@ -35,7 +39,7 @@
         {% else %}
             <div class="card" style="padding: 1cm">
                 <div class="card-header">
-                    <h2>Not have any friend yet!</h2>
+                    <h2>No friends added yet.</h2>
                 </div>
             </div>
         {% endif %}

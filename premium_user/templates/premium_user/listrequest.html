@@ -30,7 +30,7 @@
                         {% for key2, value2 in value1.items %}
                             {% for key3, value3 in value2.items %} 
                                 <tr>
-                                    <td><a href="{% url 'premium_user:premiumuserdetail' value3 %}">{{ key2 }}</a></td>
+                                    <td><a href="{% url 'premium_user:userprofile' value3 %}">{{ key2 }}</a></td>
                                     <td>{{ key3 }}</td>
                                     <td>            
                                         <button name = {{ key1 }} type="submit" class="btn btn-default" value="accept">Accept</button>

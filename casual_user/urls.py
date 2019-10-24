@@ -29,4 +29,11 @@ urlpatterns = [
 
     #post
     url(r'postcontent/$', views.PostContentView.as_view(), name='postcontent'),
+    
+    #message
+    url(r'inbox/$', views.InboxView.as_view(), name="inbox"),
+    url(r'chat/$', views.ChatView.as_view(), name="chat"),
+
+    # settings
+    url(r'settings/$', views.SettingsView.as_view(), name="settings"),
 ]
