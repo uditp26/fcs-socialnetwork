@@ -190,7 +190,7 @@ class VerifyPanFormView(View):
                 return redirect('commercial_user:addmoneytosubscribe')
                 #commercial_user = {'status':statusofrequest}
                 #return render(request, self.template_name, {'commercial_user': commercial_user})
-            elif statusofrequest == 1: #pending
+            elif statusofrequest == 4 or statusofrequest == 1: #pending
                 commercial_user = {'status':statusofrequest, 'form':form}
                 return render(request, self.template_name, {'commercial_user': commercial_user})
             else: #not allowed, declined, not verified
@@ -199,51 +199,64 @@ class VerifyPanFormView(View):
     def post(self, request):
         #form = self.form_class(request.POST)
         current_user = request.user
-        form_class = VerifyPanForm
-        form = self.form_class(request.POST)
+        #form_class = VerifyPanForm
+        #form = self.form_class(request.POST)
         
     #     #if request.POST.dict().get("buttonid") is None:
         if request.POST.dict()["buttonid2"] == "Verify-Account":
             wallet = Wallet.objects.get(username=current_user.username)
             c_user = CommercialUser.objects.get(user=current_user)
-            if form.is_valid():
-                pan_card = form.cleaned_data['pan_Card_Number']
-                previous_pan = c_user.pan
+            # if form.is_valid():
+            #     pan_card = form.cleaned_data['pan_Card_Number']
+            #     previous_pan = c_user.pan
+            requeststatus = c_user.statusofrequest
+            if requeststatus == 1:
+                c_user.statusofrequest = 4
+                c_user.save()
+                
+                #Add code to send email to admin
+                # username = c_user.username
+                # send_email(sender=admin@gmail.com,subject="Verification request",body="Request from Username="+username)
+
                 requeststatus = c_user.statusofrequest
-                if requeststatus == 1:
-                    # if previous_pan != 0:
-                    #     return HttpResponseRedirect(reverse('commerical_user:verifypan'))
-                        # form.add_error('pan_Card_Number', "PAN Card Number already exists for your account. ")
-                        # commercial_user = {'status':requeststatus, 'form':form}
-                        # return render(request, self.template_name, {'commercial_user':commercial_user})
-                    if previous_pan == 0:
-                        if pan_card is None:
-                            form.add_error('pan_Card_Number', "Field is empty. Please enter PAN Card Number. ")
-                            commercial_user = {'status':requeststatus, 'form':form}
-                            return render(request, self.template_name, {'commercial_user':commercial_user})
-                        else:
-                            same_pan = len(CommercialUser.objects.filter(pan=pan_card))
-                            if same_pan != 0:
-                                form.add_error('pan_Card_Number', "PAN Card Number already exists. ")
-                                commercial_user = {'status':requeststatus, 'form':form}
-                                return render(request, self.template_name, {'commercial_user':commercial_user})
-                            else:
-                                c_user.pan = pan_card
-                                c_user.save()
-                                pan_card = c_user.pan
-                                panstatus = isPanValid(pan_card)
-                                if panstatus == False:
-                                    c_user.statusofrequest = 3 #denied
-                                    c_user.save()
-                                    return redirect('commercial_user:denied')
-                                else:
-                                    c_user.statusofrequest = 2 #verified
-                                    c_user.save()
-                                    return redirect('commercial_user:addmoneytosubscribe')
-                elif requeststatus == 2:
-                    return redirect('commercial_user:addmoneytosubscribe')
-                elif requeststatus == 3:
-                    return redirect('commercial_user:denied')
+                commercial_user = {'status':requeststatus}
+                return render(request, self.template_name, {'commercial_user':commercial_user})
+            elif requeststatus == 4:
+                commercial_user = {'status':requeststatus}
+                return render(request, self.template_name, {'commercial_user':commercial_user})
+                # if previous_pan != 0:
+                #     return HttpResponseRedirect(reverse('commerical_user:verifypan'))
+                    # form.add_error('pan_Card_Number', "PAN Card Number already exists for your account. ")
+                    # commercial_user = {'status':requeststatus, 'form':form}
+                    # return render(request, self.template_name, {'commercial_user':commercial_user})
+                    # if previous_pan == 0:
+                    #     if pan_card is None:
+                    #         form.add_error('pan_Card_Number', "Field is empty. Please enter PAN Card Number. ")
+                    #         commercial_user = {'status':requeststatus, 'form':form}
+                    #         return render(request, self.template_name, {'commercial_user':commercial_user})
+                    #     else:
+                    #         same_pan = len(CommercialUser.objects.filter(pan=pan_card))
+                    #         if same_pan != 0:
+                    #             form.add_error('pan_Card_Number', "PAN Card Number already exists. ")
+                    #             commercial_user = {'status':requeststatus, 'form':form}
+                    #             return render(request, self.template_name, {'commercial_user':commercial_user})
+                    #         else:
+                    #             c_user.pan = pan_card
+                    #             c_user.save()
+                    #             pan_card = c_user.pan
+                    #             panstatus = isPanValid(pan_card)
+                    #             if panstatus == False:
+                    #                 c_user.statusofrequest = 3 #denied
+                    #                 c_user.save()
+                    #                 return redirect('commercial_user:denied')
+                    #             else:
+                    #                 c_user.statusofrequest = 2 #verified
+                    #                 c_user.save()
+                    #                 return redirect('commercial_user:addmoneytosubscribe')
+            elif requeststatus == 2:
+                return redirect('commercial_user:addmoneytosubscribe')
+            elif requeststatus == 3:
+                return redirect('commercial_user:denied')
        
 
 class DeniedAccessView(View):

@@ -19,4 +19,6 @@ urlpatterns = [
     url(r'mywallet/sendmoney/$', views.SendMoneyFormView.as_view(), name="sendmoney"),
     url(r'mywallet/requestmoney/$', views.RequestMoneyFormView.as_view(), name="requestmoney"),
     url(r'mywallet/pendingrequests/$', views.PendingRequestsView.as_view(), name="pendingrequests"),
+    url(r'upgrade/$', views.ViewUpgradePageView.as_view(), name="upgrade"),
+    
 ]

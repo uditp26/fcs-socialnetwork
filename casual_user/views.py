@@ -661,6 +661,41 @@ class PendingRequestsView(View):
         bundle['requests'] = pay_requests
         return render(request, self.template_name, {'pay_req': bundle})
 
+class ViewUpgradePageView(View):
+    template_name = 'casual_user/upgradetopremium.html'
+    
+    def get(self, request):
+        bundle = dict()
+        current_user = request.user
+        users = len(CasualUser.objects.filter(user=current_user))
+        if users != 0:
+            bundle['paid'] = False
+            return render(request, self.template_name, {'casual_user': bundle})            
+        else:
+            bundle['paid'] = True #if user is no more casual user
+            return redirect('premium_user:addtoupdate')
+
+def updatePaymentView(current_user):
+    casual_user = CasualUser.objects.get(user=current_user)
+    current_username = casual_user.username
+    userobj = User.objects.get(username=current_username)
+    userobj.user_type = 2 #premium user
+    userobj.save()
+    if userobj.user_type == 2:
+        date_of_birth = casual_user.date_of_birth
+        gender = casual_user.gender
+        phone = casual_user.phone
+        email = casual_user.email
+        wallet = Wallet.objects.get(username=current_username)
+        wallet.transactions_left += 30
+        wallet.user_type = 2
+        wallet.save()
+        PremiumUser(user=userobj, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
+        numuser = len(PremiumUser.objects.filter(user=current_user))             
+        if numuser != 0:
+            casual_user.remove() #delete only if premium user exist
+        
+
 class LogoutView(View):
     template_name = 'login/login.html'
 

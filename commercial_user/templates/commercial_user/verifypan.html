@@ -6,6 +6,13 @@
 <div>
 	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
 			<h1 style="text-indent: 15cm"><font color="white">Commercial User Verification Status</font></h1>
+			{% if commercial_user.status == 1 %}
+			<h4 style="text-indent: 15cm"><font color="white">Please click on Verify-Account Button below.</font></h4>
+			{% endif %}	
+			{% if commercial_user.status == 4 %}
+			<h4 style="text-indent: 15cm"><font color="white">Verification request had been sent. Please check in a while.</font></h4>
+			{% endif %}	
+			
 			<!--<h4 style="text-indent: 15cm"><font color="white">Enter amount</font></h4>-->
 	</div>
 </div>
@@ -32,25 +39,22 @@
 <div class="container">
 	<div class="col-sm-offset-1 col-sm-10">
 		<table class="table table-striped table-bordered text-center">
-			<thead>
-				<tr>
-					<th class="text-center text-uppercase">Field</th>
-					<th class="text-center text-uppercase">Button</th>
-					
-				</tr>
-			</thead>
+			
 			<tbody>
 			<form class="form-horizontal" action="" method="post" enctype="multipart/form-data">
 				<!--<form action="" method="post">--> 
 			{% csrf_token %}     
 				<tr>
-					<td>{% include 'commercial_user/form-template2.html' %}</td>
 				{% if commercial_user.status == 1 %}	
 					<td> <input type="submit" name= "buttonid2" class="btn btn-primary" value="Verify-Account" /> </td>
 				{% endif %}
 				{% if commercial_user.status == 2 %}	
 					<td> <input type="submit" name= "buttonid2" class="btn btn-primary" value="Verified" disabled/> </td>
 				{% endif %}
+				{% if commercial_user.status == 4 %}
+				<td> <input type="submit" name= "buttonid2" class="btn btn-primary" value="Verification Request Sent" disabled/> </td>
+				{% endif %}
+				
 			</form>
 			</tbody>
 		</table>

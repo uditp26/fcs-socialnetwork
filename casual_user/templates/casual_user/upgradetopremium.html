@@ -1,0 +1,30 @@
+{% extends 'casual_user/basepage.html' %}
+{% block title %}Upgrade to Premium User{% endblock %} 
+
+{% block body %}
+
+<div>
+	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
+			<h1 style="text-indent: 15cm"><font color="white">Upgrade to Premium User</font></h1>
+			<h4 style="text-indent: 15cm"><font color="white">Please click on button below.</font></h4>
+			
+	</div>
+</div>
+
+{% if casual_user.paid == False %}
+
+<div class="container-fluid" style="padding: 1cm">
+<a href="{% url 'casual_user:upgrade' %}" type="button" class="btn btn-primary" >
+		&nbsp; Upgrade to Premium Account
+</a>
+</div>
+{% endif %}
+{% if casual_user.paid == True %}
+<div class="container-fluid" style="padding: 2cm">
+	You are already Subscribed as Premium user.  
+	<a href="{% url 'premium_user:homepage' %}"> Click here 
+	</a> to go to homepage.
+</div>
+{% endif %}
+
+{% endblock %}
