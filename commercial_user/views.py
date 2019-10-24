@@ -314,14 +314,14 @@ class AddMoneyFormToSubscribeView(View):
         current_user = request.user
         #form_class = AddMoneyForm
         form = self.form_class(request.POST)
-        
-        #if request.POST.dict().get("buttonid") is None:
-        if request.POST.dict()["buttonid"] == "Add-Money":
-            wallet = Wallet.objects.get(username=current_user.username)
-            c_user = CommercialUser.objects.get(user=current_user)
-            statusofrequest = c_user.statusofrequest
+        c_user = CommercialUser.objects.get(user=current_user)
+        statusofrequest = c_user.statusofrequest
 
-            if statusofrequest == 2:
+        if statusofrequest == 2:
+            #if request.POST.dict().get("buttonid") is None:
+            if request.POST.dict()["buttonid"] == "Add-Money":
+                wallet = Wallet.objects.get(username=current_user.username)
+        
                 if form.is_valid():
                     amount = form.cleaned_data['amount']
                 if amount is None:
@@ -330,26 +330,26 @@ class AddMoneyFormToSubscribeView(View):
                     commercial_user = {'amount':wallet.amount, 'status':status, 'form':form}
                     return render(request, self.template_name, {'commercial_user':commercial_user})
                 elif amount is not None and float(amount)>0:
-                        wallet.amount += float(amount)
-                        wallet.transactions_left -= 1
-                        wallet.save()
-                        
-                        Transaction(sender=current_user, receiver="Admin", amount=amount, timestamp=datetime.now(tz=None)).save()
-                        status = c_user.subscription_paid
-                        form = self.form_class(None)
-                        commercial_user = dict()
-                        
-                        if wallet.amount>=5000:
-                        #    redirect('commercial_user:addmoneytosubscribe')
-                            #commercial_user = {'amount':wallet.amount, 'status':status}
-                            return HttpResponseRedirect(reverse('commercial_user:addmoneytosubscribe'))
-                            #return render(request, self.template_name, {'commercial_user':commercial_user})
-                        else:
-                            #commercial_user = {'amount':wallet.amount, 'status':status, 'form':form}
-                            #return render(request, self.template_name, {'commercial_user':commercial_user})
-                            return HttpResponseRedirect(reverse('commercial_user:addmoneytosubscribe'))
+                    wallet.amount += float(amount)
+                    wallet.transactions_left -= 1
+                    wallet.save()
+                    
+                    Transaction(sender=current_user, receiver="Admin", amount=amount, timestamp=datetime.now(tz=None)).save()
+                    status = c_user.subscription_paid
+                    form = self.form_class(None)
+                    commercial_user = dict()
+                    
+                    if wallet.amount>=5000:
+                    #    redirect('commercial_user:addmoneytosubscribe')
+                        #commercial_user = {'amount':wallet.amount, 'status':status}
+                        return HttpResponseRedirect(reverse('commercial_user:addmoneytosubscribe'))
+                        #return render(request, self.template_name, {'commercial_user':commercial_user})
+                    else:
+                        #commercial_user = {'amount':wallet.amount, 'status':status, 'form':form}
+                        #return render(request, self.template_name, {'commercial_user':commercial_user})
+                        return HttpResponseRedirect(reverse('commercial_user:addmoneytosubscribe'))
                 else:
-                
+                    
                     form.add_error('amount', "You have entered value less than Rs 1.")
                     commercial_user = dict()
                     
@@ -361,7 +361,7 @@ class AddMoneyFormToSubscribeView(View):
             elif request.POST.dict()["buttonid"] == "Subscribe":
                 c_user = CommercialUser.objects.get(user=current_user)
                 wallet = Wallet.objects.get(username=current_user.username)
-                
+                    
 
                 if c_user.subscription_paid == False and wallet.amount >= 5000.0:
                     c_user.subscription_paid = True
@@ -379,6 +379,7 @@ class AddMoneyFormToSubscribeView(View):
                         form = self.form_class(None)
                         commercial_user = {'amount':wallet.amount, 'status':status, 'form':form}
                         return render(request, self.template_name, {'commercial_user':commercial_user})    
+                    
                 elif c_user.subscription_paid == True:
                     return redirect('commercial_user:homepage')
                     
@@ -391,14 +392,13 @@ class AddMoneyFormToSubscribeView(View):
                     
                     return render(request, self.template_name, {'commercial_user':commercial_user})
 
-            elif statusofrequest == 1: #pending, not validated yet
-                return redirect('commercial_user:verifypan')
+        elif statusofrequest == 1: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
 
-            else: #if not valid pan, then redirect to another page. Suggest user to sign
-                #up for premium or casual user, and redirect to register page
-                return redirect('commercial_user:denied')
-           
-            
+        else: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page
+            return redirect('commercial_user:denied')
+                      
                 
         
 class MainHomepageView(View):
