@@ -499,9 +499,8 @@ def request_group(current_user, search_name):
     # bundle={}
     bundle=[]
     key = 1
-    for group in group_name_list:
-        bundle=[]
-        keyl=[]; groupadminusernamel=[]; groupadminnamel=[];groupnamel = []; statusl=[];grouppricel=[]
+    keyl=[]; groupadminusernamel=[]; groupadminnamel=[];groupnamel = []; statusl=[];grouppricel=[]
+    for group in group_name_list: 
         try:
             if current_user.username in group.members:
                 group_name = group.name
@@ -550,7 +549,8 @@ def request_group(current_user, search_name):
         groupnamel.append(group_name), statusl.append(1), grouppricel.append(group_price)
         key = key+1
 
-    bundle = zip(keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel)
+    if keyl:
+        bundle = zip(keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel)
     return bundle
 
 class ListGroupView(View):

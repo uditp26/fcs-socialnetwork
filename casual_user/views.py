@@ -644,12 +644,13 @@ def request_group(current_user, search_name):
     group_name_list = group_name_list.exclude(admin = current_user.username)
 
     group_status=[]
-    # bundle={}
+    
+
     bundle=[]
     key = 1
+    keyl=[]; groupadminusernamel=[]; groupadminnamel=[];groupnamel = []; statusl=[];grouppricel=[]
     for group in group_name_list:
-        bundle=[]
-        keyl=[]; groupadminusernamel=[]; groupadminnamel=[];groupnamel = []; statusl=[];grouppricel=[]
+        
         try:
             if current_user.username in group.members:
                 group_name = group.name
@@ -697,8 +698,8 @@ def request_group(current_user, search_name):
         keyl.append(key); groupadminusernamel.append(group_admin);groupadminnamel.append(name)
         groupnamel.append(group_name), statusl.append(1), grouppricel.append(group_price)
         key = key+1
-
-    bundle = zip(keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel)
+    if keyl:
+        bundle = zip(keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel)
     return bundle
 
 class ListGroupView(View):
