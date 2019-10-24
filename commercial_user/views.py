@@ -533,10 +533,11 @@ class CreatePagesFormView(View):
 
     def post(self, request):
         current_user = request.user
-        commerical_user = CommercialUser.objects.get(user=current_user)
+        commercial_user = CommercialUser.objects.get(user=current_user)
+        print(commercial_user.statusofrequest)
         if commercial_user.statusofrequest == 2:
-            if commerical_user.subscription_paid == True:
-                username = commerical_user.user.username
+            if commercial_user.subscription_paid == True:
+                username = commercial_user.user.username
 
                 form = self.form_class(request.POST)
 
