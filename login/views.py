@@ -38,6 +38,7 @@ from .models import User, FailedLogin
 
 from casual_user.models import CasualUser, Wallet
 from premium_user.models import PremiumUser
+from commercial_user.models import CommercialUser, Pages
 
 import time
 
@@ -89,15 +90,9 @@ class LoginFormView(View):
 
                 if user.is_active and int(radio_btn) == user.user_type:
                     login(request, user)
-                    # redirect to respective page
-                    
-                    # if radio_btn == '1':
-                    #     return redirect('casual_user:homepage')
-                    # elif radio_btn == '2':
-                    #     return redirect('premium_user:myprofile')
 
                     f_list = FailedLogin.objects.filter(username=username)
-
+                    
                     if len(f_list) > 0:
                         curr_time = time.time()
 
@@ -111,9 +106,9 @@ class LoginFormView(View):
                             if radio_btn == '1':
                                 return redirect('casual_user:homepage')
                             elif radio_btn == '2':
-                                return redirect('premium_user:myprofile')
+                                return redirect('premium_user:myprofile')                   
                             else:
-                                return redirect('')
+                                return redirect('commercial_user:payment')
                     else:
                         login(request, user)
 
@@ -123,7 +118,7 @@ class LoginFormView(View):
                         elif radio_btn == '2':
                             return redirect('premium_user:myprofile')
                         else:
-                            return redirect('')
+                            return redirect('commercial_user:payment')
                 else:
                     form.add_error('username', "User does not exist.")
             else:
@@ -177,19 +172,18 @@ class RegistrationFormView(View):
             new_user, username = createNewUser(email, password, first_name, last_name, int(account_type))
 
             if account_type == '1':
-                c_user = CasualUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email)
-                c_user.save()
+                CasualUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
                 Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=15).save()
                 return render(request, 'login/registrationsuccess.html', {'username': username})
             elif account_type == '2':
-                p_user = PremiumUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email)
-                p_user.save()
+                PremiumUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
                 # add entry to premium user table
                 Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=30).save()
                 return render(request, 'login/registrationsuccess.html', {'username': username})
             else:
-                # add entry to commercial user table
+                CommercialUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
                 Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=10000).save()
+                Pages(username=username, title=[], description=[], page_link=[]).save()
                 return render(request, 'login/registrationsuccess.html', {'username': username})
 
         return render(request, self.template_name, {'form': form})

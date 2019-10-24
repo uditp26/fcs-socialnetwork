@@ -23,6 +23,7 @@ class ProfileView(View):
             raise Http404
         else:
             casual_user = PremiumUser.objects.get(user=current_user)
+            
             bundle = dict()
             name = casual_user.user.first_name + ' ' +  casual_user.user.last_name
             bundle = {'name': name, 'date_of_birth': casual_user.date_of_birth, 'gender': casual_user.gender,'phone': casual_user.phone}
