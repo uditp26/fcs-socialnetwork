@@ -711,6 +711,11 @@ class AddGroupFormView(View):
             name = form.cleaned_data['name']
             gtype = form.cleaned_data['gtype']
             price = form.cleaned_data['price']
+            if not price:
+                price = 0
+            if price < 0:
+                form.add_error('price', "Only allowed positive number.")
+                return render(request, self.template_name, {'form': form})
             try:
                 group= Group.objects.get(admin = current_user.username)
                 grouplist = group.group_list
@@ -738,7 +743,8 @@ class AddGroupFormView(View):
                 group.group_list.append(addgroup.name)
                 group.save()
 
-        return render(request, self.template_name, {'form': form})
+        return HttpResponseRedirect(reverse('premium_user:groupdetails'))
+    
 
 def return_bundle_for_request(current_user):
     current_request = GroupRequest.objects.filter(admin = current_user.username)

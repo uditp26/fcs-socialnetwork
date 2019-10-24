@@ -74,7 +74,7 @@ class RequestMoneyForm(forms.Form):
 class AddGroupForm(forms.Form):
     name = forms.CharField(max_length=50)
     gtype = forms.ChoiceField(choices=[(1, 'Free'), (2, 'Premium')],widget = forms.RadioSelect)
-    price = forms.FloatField()
+    price = forms.FloatField(required=False, min_value=0)
 
     class Meta:
         model = AddGroup

@@ -25,4 +25,7 @@ urlpatterns = [
     url(r'mywallet/requestmoney/$', views.RequestMoneyFormView.as_view(), name="requestmoney"),
     url(r'mywallet/pendingrequests/$', views.PendingRequestsView.as_view(), name="pendingrequests"),
 
+    #message
+    url(r'inbox/$', views.InboxView.as_view(), name="inbox"),
+    url(r'chat/$', views.ChatView.as_view(), name="chat"),
 ]

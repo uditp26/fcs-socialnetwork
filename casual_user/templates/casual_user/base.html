@@ -32,7 +32,8 @@
                                 <span class="glyphicon glyphicon-home" aria-hidden="true"></span>&nbsp; Home
                             </a>
                         </li>
-                        
+
+                       
                         <li class="dropdown">
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown">&nbsp;<span class="glyphicon glyphicon-user"></span> Friend <span class="caret"></span></a>
                             <ul class="dropdown-menu">
@@ -46,6 +47,13 @@
                                 
                             </ul>
                         </li>
+                        
+                        <li class="">
+                            <a href="{% url 'casual_user:inbox' %}">
+                                <span class="glyphicon glyphicon-comment" aria-hidden="true"></span>&nbsp; Messages
+                            </a>
+                        </li>
+                        
 
                         <li class="">
                             <a href="{% url 'casual_user:yourjoinedgroup' %}">

@@ -822,6 +822,98 @@ class JoinedGroupView(View):
                 pass
         return HttpResponseRedirect(reverse('casual_user:yourjoinedgroup'))
 
+#_________________________________________________Message______________________________________________________
+def getfriendlist(username1):
+    try:
+        have_friend = Friend.objects.get(username = username1)
+        friendlist = []
+        for i in have_friend.friend_list:
+            userObj = User.objects.get(username= i)
+            if userObj.user_type is not 1:
+                friendlist.append(i)
+
+    except:
+        friendlist = []
+    return friendlist
+
+class Saveuser:
+    username = ""
+usernameObj = Saveuser() 
+
+
+class InboxView(View):
+    template_name = 'casual_user/inbox.html'
+
+    def get(self, request):
+        current_user = request.user
+        username1 = current_user.username
+        friendlist = getfriendlist(username1)
+        current_user = dict()
+            
+        userinfo=dict()
+        if friendlist:
+            uname = []
+            for i in friendlist:
+                userObj = User.objects.get(username = i)
+                name = str(userObj.first_name) + ' ' + str(userObj.last_name)
+                uname.append(name)
+            info = zip(friendlist, uname)
+            userinfo[username1] = info
+        else:
+            userinfo = dict()
+        return render(request, self.template_name, {'userinfo': userinfo})
+
+    def post(self, request):
+        current_user = request.user
+        username1 = current_user.username
+        friendlist = getfriendlist(username1)
+        
+        for i in friendlist:
+            try:
+                selected_user = i
+
+                if request.POST.dict()[selected_user] == "View Message":
+                    usernameObj.username = ""
+                    usernameObj.username = selected_user
+            except:
+                pass
+        return redirect('casual_user:chat')
+
+def showmessages(sender, receiver):
+    count = 0
+    try:
+        messagebundle1 = Message.objects.get(sender = sender, receiver = receiver)
+        messages1 = list(messagebundle1.messages);  timestamp1 = list(messagebundle1.timestamp)
+    except:
+        messages1 = []; timestamp1 = []; count += 1
+        pass
+    try:
+        messagebundle2 = Message.objects.get(sender = receiver, receiver = sender)
+        messages2 = list(messagebundle2.messages); timestamp2 = list(messagebundle2.timestamp)
+        
+    except:
+        messages2 = []; timestamp2 = []
+        count += 1
+        pass
+    if count != 2:
+        messages = messages1 + messages2
+        timestamp = timestamp1 + timestamp2
+        updatemessages = [x for _,x in sorted(zip(timestamp,messages), reverse= True)]
+    else:
+        updatemessages =  []
+    return updatemessages
+
+class ChatView(View):
+    template_name = 'casual_user/chat.html'
+    def get(self, request):
+        current_user = request.user
+        username1 = current_user.username; sender = username1
+        receiver = usernameObj.username
+        
+        updatemessages = showmessages(sender, receiver)
+
+        msg = {'updatemessages':updatemessages}
+        return render(request, self.template_name, {'msg': msg})
 
 
 class LogoutView(View):
