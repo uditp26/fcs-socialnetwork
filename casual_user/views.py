@@ -277,9 +277,9 @@ class ListUserView(View):
 
     def post(self, request):
         current_user = request.user
-        bundle, user_name_list = user_friendlist(current_user, request)
+        user_name_list = user_friendlist(current_user, request)
 
-        for i in user_name_list:
+        for i,j in user_name_list:
             try:
                 selected_user = i.username
                 if request.POST.dict()[selected_user] == "Add Friend":
@@ -397,7 +397,7 @@ def showfrndlist(username1):
     else:
         current_user = []
 
-    return current_user
+    return current_user, have_friend
 
 #for display friendlist
 class FriendView(View):
@@ -407,15 +407,15 @@ class FriendView(View):
         current_user = request.user
         username1 = current_user.username
 
-        current_user = showfrndlist(username1)
+        current_user, have_friend = showfrndlist(username1)
         return render(request, self.template_name, {'current_user': current_user})
 
     def post(self, request):
         current_user = request.user
         username1 = current_user.username
-        have_friend, current_user_friendlist = showfrndlist(username1)
+        current_user_friendlist, have_friend = showfrndlist(username1)
 
-        for i in current_user_friendlist:
+        for i,j in current_user_friendlist:
             print(request.POST.dict())
             try:
                 selected_user = i
@@ -432,7 +432,7 @@ class FriendView(View):
             except:
                 pass
 
-        current_user = showfrndlist(username1)
+        current_user, have_friend = showfrndlist(username1)
         return render(request, self.template_name, {'current_user': current_user})
 
 #_________________________________________________Wallet_____________________________________________________

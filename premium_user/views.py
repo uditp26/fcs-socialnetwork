@@ -451,7 +451,7 @@ def showfrndlist(username1):
     else:
         current_user = []
 
-    return current_user
+    return current_user, have_friend
 
 #for display friendlist
 class FriendView(View):
@@ -461,20 +461,21 @@ class FriendView(View):
         current_user = request.user
         username1 = current_user.username
 
-        current_user = showfrndlist(username1)
+        current_user, have_friend = showfrndlist(username1)
         return render(request, self.template_name, {'current_user': current_user})
 
     def post(self, request):
         current_user = request.user
         username1 = current_user.username
-        have_friend, current_user_friendlist = showfrndlist(username1)
+        current_user_friendlist, have_friend = showfrndlist(username1)
 
-        for i in current_user_friendlist:
-            print(request.POST.dict())
+        for i,j in current_user_friendlist:
+           
             try:
                 selected_user = i
                 
                 if request.POST.dict()[selected_user] == "Unfriend":
+
                     have_friend.friend_list.remove(selected_user)
                     have_friend.save()
 
@@ -486,7 +487,7 @@ class FriendView(View):
             except:
                 pass
 
-        current_user = showfrndlist(username1)
+        current_user, have_friend = showfrndlist(username1)
         return render(request, self.template_name, {'current_user': current_user})
 
 #____________________________________________________Group_____________________________________________________
@@ -1208,6 +1209,7 @@ class ChatView(View):
         # return render(request, self.template_name, {'msg': msg})
 
 #______________________________________________________________________________________________________________
+
 class LogoutView(View):
     template_name = 'login/login.html'
     def get(self, request):
