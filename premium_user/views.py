@@ -155,7 +155,7 @@ def getgroupdetails(current_user):
         current_date = datetime.now().date()
         rechargedate = groupplan.recharge_on.date()
         days = 30 - int((current_date - rechargedate).days)
-        noofgroups = groupplan.noofgroup
+        noofgroups = int(groupplan.noofgroup)
         groupplaninfo[days] = noofgroups
         bundle[anotherkey] = groupinfo; anotherkey += 1
         bundle[anotherkey] = groupplaninfo
