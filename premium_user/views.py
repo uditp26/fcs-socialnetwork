@@ -363,7 +363,6 @@ class ListUserView(View):
                     b_user_friendlist = Friend.objects.get(username = selected_user)
                     b_user_friendlist.friend_list.remove(current_user.username)
                     b_user_friendlist.save()
-
                     break
             except:
                 pass
@@ -472,8 +471,7 @@ class FriendView(View):
         username1 = current_user.username
         current_user_friendlist, have_friend = showfrndlist(username1)
 
-        for i,j in current_user_friendlist:
-           
+        for i,j in current_user_friendlist:  
             try:
                 selected_user = i
                 
