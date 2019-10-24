@@ -86,3 +86,17 @@ class GroupPlanForm(forms.Form):
     class Meta:
         model = GroupPlan
         fields = ['plantype']
+
+class GroupPlanAtRegTimeForm(forms.Form):
+    plantype = forms.ChoiceField(choices=[(1, 'Silver'), (2, 'Gold'), (3, 'Platinum')],widget = forms.RadioSelect)
+
+    class Meta:
+        model = GroupPlan
+        fields = ['plantype']
+
+class AddMoneyForReg(forms.Form):
+    amount = forms.DecimalField(decimal_places=2, min_value=0)
+
+    class Meta:
+        # model
+        fields = ['amount']

@@ -30,4 +30,8 @@ urlpatterns = [
 
     url(r'inbox/$', views.InboxView.as_view(), name="inbox"),
     url(r'chat/$', views.ChatView.as_view(), name="chat"),
+
+    #for reg
+    url(r'addmoneyforreg/$', views.AddMoneyForRegFormView.as_view(), name="addmoneyforreg"),
+    url(r'groupplanforreg/$', views.GroupPlanAtRegFormView.as_view(), name="groupplanforreg"),
 ]
