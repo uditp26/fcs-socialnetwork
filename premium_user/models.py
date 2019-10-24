@@ -39,5 +39,21 @@ class GroupRequest(models.Model):
     def __str__(self):
         return self.admin
     
+class GroupPlan(models.Model):
+    customer = models.CharField(max_length=30)
+    recharge_on = models.DateTimeField()
+    plantype = models.CharField(max_length=30)
+    noofgroup = models.FloatField()
+
+    def __str__(self):
+        return self.customer
+
+class Message(models.Model):
+    sender = models.CharField(max_length=40)
+    receiver = models.CharField(max_length=40)
+    messages = ArrayField(models.CharField(max_length=1000, null = True))
+    timestamp = ArrayField(models.DateTimeField())
     
+    def __str__(self):
+        return self.sender
 

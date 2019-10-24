@@ -54,8 +54,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'login.apps.LoginConfig',
     'casual_user.apps.CasualUserConfig',
-    'sslserver',
     'premium_user.apps.PremiumUserConfig',
+    'sslserver',
 ]
 
 # SECURE_SSL_REDIRECT = True
@@ -158,4 +158,4 @@ STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
-LOGOUT_REDIRECT_URL = 'https://127.0.0.1:8000/login/'
+LOGOUT_REDIRECT_URL = 'http://127.0.0.1:8000/login/'

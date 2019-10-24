@@ -30,7 +30,13 @@ class Friend(models.Model):
     
     def __str__(self):
         return self.username
-        
+
+class FriendRequest(models.Model):
+    requestto = models.CharField(max_length=30)
+    requestfrom = ArrayField(models.CharField(max_length=50, null = True)) 
+    
+    def __str__(self):
+        return self.requestto
 
 class Wallet(models.Model):
     username = models.CharField(max_length=30)
@@ -59,3 +65,5 @@ class Transaction(models.Model):
 
     def __str__(self):
         return self.sender
+
+

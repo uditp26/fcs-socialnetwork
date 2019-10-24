@@ -56,7 +56,7 @@ class EditProfileForm(forms.Form):
         fields = [ 'first_name', 'last_name', 'date_of_birth', 'gender', 'phone' ]
 
 class OTPVerificationForm(forms.Form):
-    otp = forms.CharField(max_length=4, widget=forms.NumberInput())
+    otp = forms.CharField(max_length=4, widget=forms.TextInput(attrs={'class':'open-keyboard'}))
 
     class Meta:
         fields = ['otp']

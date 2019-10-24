@@ -1,10 +1,12 @@
 from django.shortcuts import render, reverse, redirect
 from django.views.generic import View
 from django.http import Http404
+
 from .models import CasualUser, Post, Friend, Wallet, Request, Transaction
 from login.models import User
-from premium_user.models import AddGroup, GroupRequest
+from premium_user.models import AddGroup, GroupRequest, PremiumUser
 
+from django.contrib import messages
 from django.contrib.auth import logout
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
@@ -22,10 +24,20 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import cache_control
 
-decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='https://127.0.0.1:8000/login/')]
+decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='http://127.0.0.1:8000/login/')]
+
+def get_user_info(current_user):
+    try:
+        login_user = CasualUser.objects.get(user=current_user)
+    except:
+        pass
+    try:
+        login_user = PremiumUser.objects.get(user=current_user)
+    except:
+        pass
+    return login_user
 
 def savePost(self, request, current_user):
-
     post = request.POST.dict()['postarea']
     scope = request.POST.dict()['level']
 
@@ -33,7 +45,6 @@ def savePost(self, request, current_user):
     user_posts = Post.objects.filter(username = str(current_user))
 
     if len(user_posts) > 0:
-
         if scope == "0":
             user_posts[0].friends_posts.append(post)
             user_posts[0].frnd_timestamp.append(timestamp)
@@ -51,9 +62,9 @@ def savePost(self, request, current_user):
 
 
 def genBundle(current_user):
-    casual_user = CasualUser.objects.get(user=current_user)
+    login_user = get_user_info(current_user)
     bundle = dict()
-    name = casual_user.user.first_name + ' ' +  casual_user.user.last_name
+    name = login_user.user.first_name + ' ' +  login_user.user.last_name
     user_posts = Post.objects.filter(username=str(current_user))
     # use post 'level' information
     all_posts = None
@@ -95,11 +106,17 @@ def genBundle(current_user):
     return bundle
 
 def updateExistingUser(curr_user, first_name, last_name, gender, phone):
-    
     curr_user.first_name = first_name
     curr_user.last_name = last_name
     curr_user.save()
-    curr_user = CasualUser.objects.get(user=curr_user)
+    try:
+        curr_user = CasualUser.objects.get(user=curr_user)
+    except:
+        pass
+    try:
+        curr_user = PremiumUser.objects.get(user=curr_user)
+    except:
+        pass
     curr_user.gender = gender
     curr_user.phone = phone
     curr_user.save()
@@ -127,23 +144,22 @@ class ProfileView(View):
 
     def get(self, request):
         current_user = request.user
-
         if str(current_user) is 'AnonymousUser':
             raise Http404
         else:
-            casual_user = CasualUser.objects.get(user=current_user)
+            login_user = get_user_info(current_user)
             bundle = dict()
             #name = casual_user.user.first_name + ' ' +  casual_user.user.last_name
-            fname = casual_user.user.first_name
-            lname = casual_user.user.last_name
-            gender = casual_user.gender
+            fname = login_user.user.first_name
+            lname = login_user.user.last_name
+            gender = login_user.gender
             if gender==1:
                 gender = str("Male")
             elif gender==2:
                 gender = str("Female")
             elif gender==3:
                 gender = str("Transgender")
-            bundle = {'First Name': fname, 'Last Name': lname,'Date of Birth': casual_user.date_of_birth, 'Gender': gender, 'Email':casual_user.email, 'Phone': casual_user.phone}
+            bundle = {'First Name': fname, 'Last Name': lname,'Date of Birth': login_user.date_of_birth, 'Gender': gender, 'Email':login_user.email, 'Phone': login_user.phone}
             return render(request, self.template_name, {'current_user':bundle})
 
 @method_decorator(decorators, name='dispatch')
@@ -157,19 +173,20 @@ class EditProfileFormView(View):
         if str(current_user) is 'AnonymousUser':
             raise Http404
         else:
-            casual_user = CasualUser.objects.get(user=current_user)
+            login_user = get_user_info(current_user)
+            fname = login_user.user.first_name
+            lname = login_user.user.last_name
+            gender = login_user.gender
+            phoneno = login_user.phone
             bundle = dict()
             #name = casual_user.user.first_name + ' ' +  casual_user.user.last_name
-            fname = casual_user.user.first_name
-            lname = casual_user.user.last_name
-            gender = casual_user.gender
             if gender==1:
                 gender = str("Male")
             elif gender==2:
                 gender = str("Female")
             elif gender==3:
                 gender = str("Transgender")
-            bundle = {'first_name': fname, 'last_name': lname, 'gender': gender, 'phone': casual_user.phone}
+            bundle = {'first_name': fname, 'last_name': lname, 'gender': gender, 'phone': phoneno}
             return render(request, self.template_name, {'current_user':bundle})
 
     def post(self, request):
@@ -216,13 +233,9 @@ def user_friendlist(current_user, request):
         have_friend.friend_list = current_user_friendlist
 
     search_name = findfriend(request).lower()
-
     print("search name : ", search_name)
-
     user_name_list = User.objects.filter(first_name__icontains = search_name)
-
     user_name_list = user_name_list.exclude(username = current_user.username)
-
     return user_name_list, current_user_friendlist, have_friend
 
 
@@ -233,7 +246,6 @@ class ListUserView(View):
     def get(self, request):
         current_user = request.user
         user_name_list, current_user_friendlist, have_friend = user_friendlist(current_user, request)
-        
         bundle = dict()
         for user in user_name_list:
             if user.username in current_user_friendlist:
@@ -245,7 +257,6 @@ class ListUserView(View):
 
     def post(self, request):
         current_user = request.user
-    
         user_name_list, current_user_friendlist, have_friend = user_friendlist(current_user, request)
 
         print("Old_friend_list = ", current_user_friendlist)
@@ -325,7 +336,7 @@ class FriendView(View):
     def get(self, request):
         current_user = request.user
         username1 = current_user.username
-
+        
         try:
             have_friend = Friend.objects.get(username = username1)
             current_user_friendlist  = list(have_friend.friend_list)
@@ -368,10 +379,9 @@ class FriendView(View):
                 pass
 
         have_friend, current_user_friendlist = showfrndlist(username1)
-
+            
         current_user = dict()
         current_user[username1] = current_user_friendlist
-
         return render(request, self.template_name, {'current_user': current_user})
 
 @method_decorator(decorators, name='dispatch')
@@ -571,7 +581,49 @@ class RequestMoneyFormView(View):
 
         return render(request, self.template_name, {'form': form})
 
-#___________________________________________________________________________________________________        
+class PendingRequestsView(View):
+    template_name = 'casual_user/pendingrequests.html'
+
+    def get(self, request):
+        current_user = request.user
+        pay_requests = Request.objects.filter(receiver=current_user, status=0)
+        bundle = dict()
+        bundle['requests'] = pay_requests
+        return render(request, self.template_name, {'pay_req': bundle})
+
+    def post(self, request):
+        current_user = request.user
+        all_requests = Request.objects.filter(receiver=current_user, status=0)
+
+        for req in all_requests:
+            if request.POST.dict().get(req.request_id) is not None:
+                curr_request = Request.objects.get(request_id=req.request_id)
+                if request.POST.dict()[req.request_id] == "Pay":
+                    sender_wallet = Wallet.objects.get(username=current_user)
+                    receiver_wallet = Wallet.objects.get(username=req.sender)
+                    if sender_wallet.amount >= req.amount and receiver_wallet.transactions_left > 0:
+                        sender_wallet.amount -= req.amount
+                        receiver_wallet.amount += req.amount
+                        receiver_wallet.transactions_left -= 1
+                        sender_wallet.save()
+                        receiver_wallet.save()
+                        curr_request.status = 1
+                        curr_request.save()
+                        Transaction(sender=current_user, receiver=req.sender, amount=req.amount, timestamp=datetime.now(tz=None)).save()
+                    else:
+                        # If requested amount is greater than current balance, the request is dropped.
+                        curr_request.status = 2
+                        curr_request.save()
+                elif request.POST.dict()[req.request_id] == "Decline":
+                    curr_request.status = 2
+                    curr_request.save()
+
+        pay_requests = Request.objects.filter(receiver=current_user, status=0)
+        bundle = dict()
+        bundle['requests'] = pay_requests
+        return render(request, self.template_name, {'pay_req': bundle})
+
+#____________________________________________________Search Group_______________________________________________        
 
 def request_bundle(current_user, search_name):
     group_name_list = AddGroup.objects.filter(name__icontains = search_name)
@@ -587,31 +639,32 @@ def request_bundle(current_user, search_name):
                 #to store as backup
                 group_name = group.name
                 group_admin = group.admin
-                group_status.append([key, group_admin, group_name, 3])
-                
+                group_price = group.price
+                group_status.append([key, group_admin, group_name, 3, group_price])
                 #to pass in html
-                temp={}
-                temp[group_name] = 3
-                bundle[key] = temp
+                temp1={}; temp1[group_price] = 3
+                temp2={}; temp2[group_name] = temp1
+                bundle[key] = temp2
                 key = key+1
                 #Assumption(group admin cannot formed two group of same name) 
                 group_name_list = group_name_list.exclude(admin = group_admin, name = group_name)
         except:
             pass
     
-    for group in group_name_list:
+    for group1 in group_name_list:
         try:
-            group = GroupRequest.objects.get(admin = group.admin, name = group.name)
+            group = GroupRequest.objects.get(admin = group1.admin, name = group1.name)
             
             if current_user.username in group.members:
                 group_name = group.name
-                group_admin = group.admin                 
-                group_status.append([key, group_admin, group_name, 2])
+                group_admin = group.admin        
+                group_price = group1.price
+                group_status.append([key, group_admin, group_name, 2, group_price])
                 
                 #to pass in html
-                temp={}
-                temp[group_name] = 2
-                bundle[key] = temp
+                temp1={}; temp1[group_price] = 2
+                temp2={}; temp2[group_name] = temp1
+                bundle[key] = temp2
                 key = key+1
                 group_name_list = group_name_list.exclude(admin = group_admin, name = group_name)
         except:
@@ -620,75 +673,77 @@ def request_bundle(current_user, search_name):
     for group in group_name_list:
         group_name = group.name
         group_admin = group.admin
-        group_status.append([key, group_admin, group_name, 1])
+        group_price = group.price
+        group_status.append([key, group_admin, group_name, 1, group_price])
                 
-        temp={}
-        temp[group_name] = 1
-        bundle[key] = temp
+        temp1={}; temp1[group_price] = 1
+        temp2={}; temp2[group_name] = temp1
+        bundle[key] = temp2
 
         key = key+1
 
     return bundle, group_status
-#________________________________________________________________________________________________________________
+
 @method_decorator(decorators, name='dispatch')
 class ListGroupView(View):
     template_name = 'casual_user/list_group.html'
     
     def get(self, request):
         current_user = request.user
-        
         search_name = findGroup(request).lower()
-        # print("search name : ", search_name)
         bundle , group_status = request_bundle(current_user, search_name)
+        print("BUNDLE : ",bundle )
         return render(request, self.template_name, {'bundle': bundle})
 
     def post(self, request):
         current_user = request.user
         username = current_user.username
-
         search_name = findGroup(request).lower()
-        # print("search name : ", search_name)
-
+      
         bundle , group_status = request_bundle(current_user, search_name)
-        
-        print("Previous Bundle : ", bundle)
 
         for value in group_status:
             print(request.POST.dict())
             try:
                 if request.POST.dict()[str(value[0])] == "join":
                     admin = value[1]; name = value[2]
-                    try:
-                        group = GroupRequest.objects.get(admin = admin, name = name)
-                        group.members.append(username)
-                        group.save()
-                        #bundle update
-                        bundle[value[0]][name] = 2
-                        break
-                    except:
-                        group = GroupRequest()
-                        group.admin = admin ; group.name = name
-                        group.status = 2
-                        group.members = [] 
-                        group.members.append(username)
-                        group.save()
-                        #bundle update
-                        bundle[value[0]][name] = 2
-                        break
-                
+
+                    wallet = Wallet.objects.get(username=username)
+                    amount = wallet.amount; price = value[4]
+                    
+                    if price <= amount and wallet.transactions_left > 0:
+                        wallet.amount -= price
+                        wallet.transactions_left -= 1
+                        wallet.save()
+                        try:
+                            group = GroupRequest.objects.get(admin = admin, name = name)
+                            group.members.append(username); group.save()
+                            #bundle update
+                            bundle[value[0]][value[2]][value[4]] = 2
+                            return render(request, self.template_name, {'bundle': bundle})
+                        except:
+                            group = GroupRequest()
+                            group.admin = admin ; group.name = name
+                            group.status = 2
+                            group.members = [] 
+                            group.members.append(username); group.save()
+                            #bundle update
+                            bundle[value[0]][value[2]][value[4]] = 2
+                            return render(request, self.template_name, {'bundle': bundle})
+                    else:
+                        #message.info NOT WORKING (but not a problem code do)
+                        messages.info(request, 'Please recharge.')
+                        return render(request, self.template_name, {'bundle': bundle})
+
                 elif request.POST.dict()[str(value[0])] == "leave":
                     admin = value[1]; name = value[2]
                     group = AddGroup.objects.get(admin = admin, name = name)
                     group.members.remove(username)
                     group.save()
-
-                    bundle[value[0]][name] = 1
-                    break
-
+                    bundle[value[0]][value[2]][value[4]] = 1
+                    return render(request, self.template_name, {'bundle': bundle})
             except:
                 pass
-        
-        print("Modified Bundle :", bundle)
         return render(request, self.template_name, {'bundle': bundle})
         
 @method_decorator(decorators, name='dispatch')
