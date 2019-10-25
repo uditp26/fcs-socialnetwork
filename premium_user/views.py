@@ -5,7 +5,7 @@ from django.http import Http404
 from casual_user.models import Wallet, Transaction, Request, Post, Friend, FriendRequest, CasualUser, Timeline
 from login.models import User
 from .models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message
-from .forms import AddGroupForm, GroupPlanForm, AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, GroupPlanAtRegTimeForm, AddMoneyForReg, OTPVerificationForm
+from .forms import AddGroupForm, GroupPlanForm, AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, OTPVerificationForm, SubscriptionForm
 
 from django.contrib.auth import logout
 from django.http import HttpResponse, HttpResponseRedirect
@@ -150,6 +150,8 @@ class HomepageView(View):
         current_user = request.user
         if str(current_user) is 'AnonymousUser':
             raise Http404
+        elif PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         else:
             bundle = genBundle(current_user)
             return render(request, self.template_name, {'bundle':bundle})
@@ -159,7 +161,6 @@ class HomepageView(View):
         savePost(request, current_user)
         bundle = genBundle(current_user)
         return HttpResponseRedirect(reverse('premium_user:homepage'))
-        # return render(request, self.template_name, {'bundle':bundle})
 
 #pass to groupdetails.html
 def getgroupdetails(current_user):
@@ -199,7 +200,10 @@ class GroupDetailsView(View):
 
     def get(self, request):
         current_user = request.user
-        
+
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
+
         bundle = getgroupdetails(current_user)
         return render(request, self.template_name, {'bundle':bundle})
 
@@ -212,6 +216,8 @@ class ProfileView(View):
 
         if str(current_user) is 'AnonymousUser':
             raise Http404
+        elif PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         else:
             login_user = get_user_info(current_user)
             bundle = dict()
@@ -238,6 +244,8 @@ class EditProfileFormView(View):
         print(type(current_user))
         if str(current_user) is 'AnonymousUser':
             raise Http404
+        elif PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         else:
             login_user = get_user_info(current_user)
             fname = login_user.user.first_name
@@ -285,6 +293,9 @@ class UserProfileView(View):
         user = User.objects.get(username=username)
         fname = user.first_name
         lname = user.last_name
+
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         
         if user.user_type == 1:         # casual-user
             casual_user = CasualUser.objects.get(user=user)
@@ -369,6 +380,8 @@ class ListUserView(View):
     
     def get(self, request):
         current_user = request.user
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         bundle, user_name_list = user_friendlist(current_user, request)
         return render(request, self.template_name, {'bundle': bundle})
 
@@ -416,6 +429,8 @@ class FriendRequestView(View):
     template_name = 'premium_user/listfriendrequest.html'
     def get(self, request):
         current_user = request.user
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         try:
             friendrequestObj = FriendRequest.objects.get(requestto = current_user.username)
             friendlist = friendrequestObj.requestfrom
@@ -515,6 +530,8 @@ class FriendView(View):
 
     def get(self, request):
         current_user = request.user
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         friends_zip, have_friend = showfrndlist(current_user)
         friends_zip = checkPrivacySettings(friends_zip)
         return render(request, self.template_name, {'current_user': friends_zip})
@@ -617,6 +634,8 @@ class ListGroupView(View):
     
     def get(self, request):
         current_user = request.user
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         search_name = findGroup(request).lower()
         bundle = request_group(current_user, search_name)
         if bundle:
@@ -691,6 +710,8 @@ class GroupPlanFormView(View):
     
     def get(self, request):
         form = self.form_class(None)
+        if PremiumUser.objects.get(user=request.user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         return render(request, self.template_name, {'form': form})
 
     def post(self, request):
@@ -740,6 +761,8 @@ class AddGroupFormView(View):
     
     def get(self, request):
         current_user = request.user
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         username = current_user.username
         try:
             groupplanofuser = GroupPlan.objects.get(customer = username)
@@ -836,6 +859,8 @@ class ListRequestView(View):
     
     def get(self, request):
         current_user = request.user
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         bundle, group_request = return_bundle_for_request(current_user)
 
         return render(request, self.template_name, {'bundle': bundle})
@@ -893,6 +918,8 @@ class DeleteGroupView(View):
     
     def get(self, request):
         current_user = request.user
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         bundle = listowngroup(current_user)
         return render(request, self.template_name, {'bundle': bundle})
 
@@ -947,6 +974,8 @@ class JoinedGroupView(View):
     
     def get(self, request):
         current_user = request.user
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         bundle = listjoinedgroup(current_user)
         return render(request, self.template_name, {'bundle': bundle})
 
@@ -970,6 +999,8 @@ class WalletView(View):
 
     def get(self, request):
         current_user = request.user
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         wallet = Wallet.objects.get(username = current_user.username)
 
         w_dict = dict() 
@@ -1029,6 +1060,8 @@ class AddMoneyFormView(View):
 
     def get(self, request):
         form = self.form_class(None)
+        if PremiumUser.objects.get(user=request.user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         return render(request, self.template_name, {'form': form})
 
     def post(self, request):
@@ -1065,6 +1098,8 @@ class SendMoneyFormView(View):
 
     def get(self, request):
         form = self.form_class(request.user)
+        if PremiumUser.objects.get(user=request.user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         friend_list = None
         try:
             friend_list = Friend.objects.get(username=request.user).friend_list
@@ -1114,6 +1149,8 @@ class RequestMoneyFormView(View):
 
     def get(self, request):
         form = self.form_class(request.user)
+        if PremiumUser.objects.get(user=request.user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         friend_list = None
         try:
             friend_list = Friend.objects.get(username=request.user).friend_list
@@ -1167,6 +1204,8 @@ class PendingRequestsView(View):
 
     def get(self, request):
         current_user = request.user
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         pay_requests = Request.objects.filter(receiver=current_user, status=0)
         bundle = dict()
         bundle['requests'] = pay_requests
@@ -1223,94 +1262,130 @@ class OTPVerificationFormView(View):
         if form.is_valid():
             otp = form.cleaned_data['otp']
 
-            if request.session['otp'] != otp:
-                form.add_error('otp', 'Wrong OTP entered!')
-            elif time.time() > float(request.session['timer']) + 180:
-                form.add_error('otp', 'Timer expired!')
-            else: 
-                request.session.pop('otp', None)
-                request.session.pop('timer', None)
-                request.session.modified = True
-
-                if request.session['trans_type'] == 'add':
-                    request.session.pop('trans_type', None)
-                    request.session.modified = True
-                    username = current_user.username
-                    wallet = Wallet.objects.get(username=username)
-                    wallet.amount += float(request.session['amount'])
-                    wallet.transactions_left -= 1
-                    wallet.save()
-
-                    # Add to Transactions table
-                    Transaction(sender=username, receiver=username, amount=float(request.session['amount']), timestamp=timezone.now()).save()
-
-                    request.session.pop('amount', None)
+            try:
+                if request.session['otp'] != otp:
+                    form.add_error('otp', 'Wrong OTP entered!')
+                elif time.time() > float(request.session['timer']) + 180:
+                    form.add_error('otp', 'Timer expired!')
+                else: 
+                    request.session.pop('otp', None)
+                    request.session.pop('timer', None)
                     request.session.modified = True
 
-                    w_dict = dict() 
+                    flag = False
 
-                    w_dict['Account Type'] = wallet.user_type
-                    w_dict['Amount'] = wallet.amount
-                    w_dict['Remaining Transactions'] = wallet.transactions_left
+                    try:
+                        plan = request.session['plan']
+                        if  plan == "1":
+                            amount = request.session['sub_amount']
+                            amount = amount - 50
+                            flag = True
+                        elif plan == "2":
+                            amount = request.session['sub_amount']
+                            amount = amount - 100
+                            flag = True
+                        elif plan == "3":
+                            amount = request.session['sub_amount']
+                            amount = amount - 150
+                            flag = True
+                        else:
+                            form.add_error('otp', 'Unknown transaction!')
 
-                    return render(request, 'premium_user/mywallet.html', {'wallet': w_dict})
+                        if flag:
+                            wallet = Wallet.objects.get(username=str(current_user))
+                            wallet.amount = amount
+                            wallet.save()
 
-                elif request.session['trans_type'] == 'send':
-                    request.session.pop('trans_type', None)
-                    request.session.modified = True
+                            p_user = PremiumUser.objects.get(user=current_user)
+                            p_user.subscription = int(plan)
+                            p_user.save()
 
-                    sender_wallet = Wallet.objects.get(username=current_user)
-                    receiver_wallet = Wallet.objects.get(username=request.session['send_to'])
+                            request.session.pop('plan', None)
+                            request.session.pop('sub_amount', None)
+                            request.session.modified = True
 
-                    sender_wallet.amount -= float(request.session['amount'])
-                    sender_wallet.transactions_left -= 1    # Assumption: Sending money causes one transaction of the sender to be exhausted.
-                    receiver_wallet.amount += float(request.session['amount'])
-                    sender_wallet.save()
-                    receiver_wallet.save()
+                            return HttpResponseRedirect(reverse('premium_user:homepage'))
+                    except:
+                        if request.session['trans_type'] == 'add':
+                            request.session.pop('trans_type', None)
+                            request.session.modified = True
+                            username = current_user.username
+                            wallet = Wallet.objects.get(username=username)
+                            wallet.amount += float(request.session['amount'])
+                            wallet.transactions_left -= 1
+                            wallet.save()
 
-                    # Add to Transactions table
-                    Transaction(sender=current_user, receiver=request.session['send_to'], amount=float(request.session['amount']), timestamp=timezone.now()).save()
+                            # Add to Transactions table
+                            Transaction(sender=username, receiver=username, amount=float(request.session['amount']), timestamp=timezone.now()).save()
 
-                    request.session.pop('amount', None)
-                    request.session.pop('send_to', None)
-                    request.session.modified = True
+                            request.session.pop('amount', None)
+                            request.session.modified = True
 
-                    w_dict = dict() 
+                            w_dict = dict() 
 
-                    w_dict['Account Type'] = sender_wallet.user_type
-                    w_dict['Amount'] = sender_wallet.amount
-                    w_dict['Remaining Transactions'] = sender_wallet.transactions_left
+                            w_dict['Account Type'] = wallet.user_type
+                            w_dict['Amount'] = wallet.amount
+                            w_dict['Remaining Transactions'] = wallet.transactions_left
 
-                    return render(request, 'premium_user/mywallet.html', {'wallet': w_dict})
+                            return render(request, 'premium_user/mywallet.html', {'wallet': w_dict})
 
-                elif request.session['trans_type'] == 'req':
-                    request.session.pop('trans_type', None)
-                    request.session.modified = True
+                        elif request.session['trans_type'] == 'send':
+                            request.session.pop('trans_type', None)
+                            request.session.modified = True
 
-                    sender = Wallet.objects.get(username=current_user)
+                            sender_wallet = Wallet.objects.get(username=current_user)
+                            receiver_wallet = Wallet.objects.get(username=request.session['send_to'])
 
-                    # Add entry to Request table
-                    req_count = len(Request.objects.all())
-                    req_id = "RQST-" + str(req_count + 1)
-                    Request(request_id=req_id, sender=current_user, receiver=request.session['request_from'], amount=float(request.session['amount']), status=0).save()
+                            sender_wallet.amount -= float(request.session['amount'])
+                            sender_wallet.transactions_left -= 1    # Assumption: Sending money causes one transaction of the sender to be exhausted.
+                            receiver_wallet.amount += float(request.session['amount'])
+                            sender_wallet.save()
+                            receiver_wallet.save()
 
-                    request.session.pop('amount', None)
-                    request.session.pop('request_from', None)
-                    request.session.modified = True
+                            # Add to Transactions table
+                            Transaction(sender=current_user, receiver=request.session['send_to'], amount=float(request.session['amount']), timestamp=timezone.now()).save()
 
-                    # Assumption: If the request is accepted, then no. of transactions is deducted by one.
+                            request.session.pop('amount', None)
+                            request.session.pop('send_to', None)
+                            request.session.modified = True
 
-                    w_dict = dict()
+                            w_dict = dict() 
 
-                    w_dict['Account Type'] = sender.user_type
-                    w_dict['Amount'] = sender.amount
-                    w_dict['Remaining Transactions'] = sender.transactions_left
+                            w_dict['Account Type'] = sender_wallet.user_type
+                            w_dict['Amount'] = sender_wallet.amount
+                            w_dict['Remaining Transactions'] = sender_wallet.transactions_left
 
-                    return render(request, 'premium_user/mywallet.html', {'wallet': w_dict})
+                            return render(request, 'premium_user/mywallet.html', {'wallet': w_dict})
 
-                else:
-                    form.add_error('otp', 'Unknown transaction!')
-                
+                        elif request.session['trans_type'] == 'req':
+                            request.session.pop('trans_type', None)
+                            request.session.modified = True
+
+                            sender = Wallet.objects.get(username=current_user)
+
+                            # Add entry to Request table
+                            req_count = len(Request.objects.all())
+                            req_id = "RQST-" + str(req_count + 1)
+                            Request(request_id=req_id, sender=current_user, receiver=request.session['request_from'], amount=float(request.session['amount']), status=0).save()
+
+                            request.session.pop('amount', None)
+                            request.session.pop('request_from', None)
+                            request.session.modified = True
+
+                            # Assumption: If the request is accepted, then no. of transactions is deducted by one.
+
+                            w_dict = dict()
+
+                            w_dict['Account Type'] = sender.user_type
+                            w_dict['Amount'] = sender.amount
+                            w_dict['Remaining Transactions'] = sender.transactions_left
+
+                            return render(request, 'premium_user/mywallet.html', {'wallet': w_dict})
+
+                        else:
+                            form.add_error('otp', 'Unknown transaction!')
+            except:
+                form.add_error('otp', 'Unauthorised transaction!')
 
         return render(request, self.template_name, {'form': form})
 
@@ -1319,6 +1394,8 @@ class PostContentView(View):
     template_name = 'premium_user/postcontent.html'
 
     def get(self, request):
+        if PremiumUser.objects.get(user=request.user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         owner = request.session.get('owner')
         owner = User.objects.get(username=owner).first_name + " " + User.objects.get(username=owner).last_name
         visitor = request.user
@@ -1338,6 +1415,8 @@ class NofriendsView(View):
     template_name = 'premium_user/nofriends.html'
 
     def get(self, request):
+        if PremiumUser.objects.get(user=request.user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         return render(request, self.template_name)
 
 #_________________________________________________Message______________________________________________________
@@ -1378,6 +1457,8 @@ class InboxView(View):
 
     def get(self, request):
         current_user = request.user
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         username1 = current_user.username
         friendlist = getfriendlist(username1)
         current_user = dict()
@@ -1440,6 +1521,8 @@ class ChatView(View):
     template_name = 'premium_user/chat.html'
     def get(self, request):
         current_user = request.user
+        if PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         username1 = current_user.username; sender = username1
         receiver = usernameObj.username
         
@@ -1470,6 +1553,8 @@ class SettingsView(View):
         current_user = request.user
         if str(current_user) is 'AnonymousUser':
             raise Http404
+        elif PremiumUser.objects.get(user=current_user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
         else:
             level = Timeline.objects.get(username=current_user).level
             if level:
@@ -1490,107 +1575,50 @@ class SettingsView(View):
         
         user_timeline.save()
         return HttpResponseRedirect(reverse('premium_user:settings'))
-#______________________________________________________Registration added______________________________________
-#new registration of premium_user so send to new page...... 
 
-@method_decorator(decorators, name='dispatch')
-class GroupPlanAtRegFormView(View):
-    form_class = GroupPlanAtRegTimeForm
-    template_name = 'premium_user/groupplanatregtime_form.html'
-    
-    def get(self, request):
-        current_user = request.user
-        form = self.form_class(request.POST)
-        return render(request, self.template_name, {'form': form})
-
-    def post(self, request):
-        current_user = request.user
-        form = self.form_class(request.POST)
-        username = current_user.username
-
-        if form.is_valid():
-            plantype = form.cleaned_data['plantype']
-            
-            wallet = Wallet.objects.get(username = username)
-            amount = wallet.amount
-
-            price, noofgroup = priceofplan(int(plantype))
-
-
-            if wallet.transactions_left == 0:
-                form.add_error('plantype', "You don't have any transactions remaining for the month.")
-                return HttpResponseRedirect(reverse('premium_user:groupplanforreg'))
-            else:
-                
-                if amount >= price:
-                    amount -= price
-                    wallet.transactions_left -= 1
-                    wallet.amount = amount
-                    wallet.save()
-
-                    current_date = datetime.now().date()
-                    try:
-                        groupplan = GroupPlan.objects.get(customer = username)
-                        groupplan.recharge_on = current_date; groupplan.plantype = plantype
-                        groupplan.noofgroup += noofgroup
-                        groupplan.save()
-                    except:
-                        GroupPlan(customer = username, recharge_on = current_date, plantype = plantype, noofgroup = noofgroup).save()
-                        
-                    name = current_user.first_name + ' ' + current_user.last_name
-                    return render(request, 'login/registrationsuccess.html', {'name': name})
-
-                else:
-                    print("NO")
-                    form.add_error('plantype', "You don't have sufficient balance.")
-                    HttpResponseRedirect(reverse('premium_user:groupplanforreg'))
-
-        return HttpResponseRedirect(reverse('premium_user:groupplanforreg'))
-
-@method_decorator(decorators, name='dispatch')
-class AddMoneyForRegFormView(View):
-    form_class = AddMoneyForReg
-    template_name = 'premium_user/addmoneyforreg.html'
+class SubscriptionFormView(View):
+    form_class = SubscriptionForm
+    template_name = 'premium_user/subscriptionform.html'
 
     def get(self, request):
+        current_user = request.user
         form = self.form_class(None)
-        return render(request, self.template_name, {'form': form})
-
+        if str(current_user) is 'AnonymousUser':
+            raise Http404
+        else:
+            p_user = PremiumUser.objects.get(user=current_user)
+        
+            if p_user.subscription > 0:
+                return HttpResponseRedirect(reverse('premium_user:homepage'))
+            else:
+                return render(request, self.template_name, {'form':form})
+        
     def post(self, request):
-        form = self.form_class(request.POST)
         current_user = request.user
+        form = self.form_class(request.POST)
 
         if form.is_valid():
             amount = form.cleaned_data['amount']
-            username = current_user.username
+            plan = form.cleaned_data['subscription_plan']
+            
+            if plan == "2" and amount < 100:
+                form.add_error('amount', 'Enter amount greater than Rs. 100')
+            elif plan == "3" and amount < 150:
+                form.add_error('amount', 'Enter amount greater than Rs. 150')
+            else:
+                email = User.objects.get(username=str(current_user)).email
+                subject = 'OTP for Subscription Payment'
+                c = sendOTP(request, email, subject)
 
-            # Implement OTP functionality here
-
-            wallet = Wallet.objects.get(username=username)
-
-            if wallet.transactions_left == 0:
-                form.add_error('amount', "You don't have any transactions remaining for the month.")
-            else: 
-                wallet.amount += float(amount)
-                wallet.transactions_left -= 1
-                wallet.save()
-
-                # Add to Transactions table
-                Transaction(sender=username, receiver=username, amount=amount, timestamp=timezone.now()).save()
-
-                w_dict = dict() 
-
-                w_dict['Account Type'] = wallet.user_type
-                w_dict['Amount'] = wallet.amount
-                w_dict['Remaining Transactions'] = wallet.transactions_left
-
-                
-                return HttpResponseRedirect(reverse('premium_user:groupplanforreg'))
-
-        return HttpResponseRedirect(reverse('premium_user:addmoneyforreg'))
-
-
-#_____________________________________________________________________________________________________
+                if c == 1:
+                    request.session['sub_amount'] = amount
+                    request.session['plan'] = plan
+                    return HttpResponseRedirect(reverse('premium_user:otpverify'))
+                else:
+                    form.add_error('amount', 'OTP generation failed. Please check your network connection.')    
+            
+        return render(request, self.template_name, {'form':form})
+        
 
 @method_decorator(decorators, name='dispatch')
 class LogoutView(View):

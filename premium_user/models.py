@@ -11,6 +11,7 @@ class PremiumUser(models.Model):
     gender = models.SmallIntegerField()
     phone = PhoneNumberField(blank=True)
     email = models.EmailField()
+    subscription = models.SmallIntegerField(default=0)          # 0 -> Non subscribed; 1-> Silver, 2-> Gold, 3->Premium
     
     def __str__(self):
         return self.email

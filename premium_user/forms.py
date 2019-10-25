@@ -92,16 +92,11 @@ class OTPVerificationForm(forms.Form):
 
     class Meta:
         fields = ['otp']
-class GroupPlanAtRegTimeForm(forms.Form):
-    plantype = forms.ChoiceField(choices=[(1, 'Silver'), (2, 'Gold'), (3, 'Platinum')],widget = forms.RadioSelect)
 
-    class Meta:
-        model = GroupPlan
-        fields = ['plantype']
-
-class AddMoneyForReg(forms.Form):
-    amount = forms.DecimalField(decimal_places=2, min_value=0)
+class SubscriptionForm(forms.Form):
+    subscription_plan = forms.ChoiceField(choices=[(1, 'Silver: Rs 50/month'), (2, 'Gold: Rs 100/month'), (3, 'Platinum: Rs 150/month')], widget = forms.RadioSelect)
+    amount = forms.FloatField(min_value=50)
 
     class Meta:
         # model
-        fields = ['amount']
+        fields = ['subscription_plan', 'amount']

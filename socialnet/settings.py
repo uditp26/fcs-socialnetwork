@@ -55,7 +55,8 @@ INSTALLED_APPS = [
     'login.apps.LoginConfig',
     'casual_user.apps.CasualUserConfig',
     'premium_user.apps.PremiumUserConfig',
-    'sslserver',
+    'commercial_user.apps.CommercialUserConfig',
+    # 'sslserver',
 ]
 
 # SECURE_SSL_REDIRECT = True

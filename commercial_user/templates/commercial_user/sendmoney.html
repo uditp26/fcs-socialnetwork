@@ -1,0 +1,28 @@
+{% extends 'commercial_user/base.html' %}
+{% block title %}Send Money{% endblock %}
+
+{% block body %}
+
+<div>
+	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
+			<h1 style="text-indent: 15cm"><font color="white">Send Money</font></h1>
+			<h4 style="text-indent: 15cm"><font color="white">Enter amount</font></h4>
+	</div>
+</div>
+
+<div class="container-fluid">
+	<form class="form-horizontal" action="" method="post" enctype="multipart/form-data">
+		{% csrf_token %}
+		<div class="container-fluid" style="padding: 2cm">
+			{% include 'login/form-template.html' %}
+			<div class="form-group">
+				<div class="col-xs-offset-3 col-xs-1">
+					<button type="submit" class="btn btn-success">Proceed to Send Money</button>
+				</div>
+			</div>
+		</div>
+	</form>
+</div>
+
+
+{% endblock %}

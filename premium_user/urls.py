@@ -42,7 +42,6 @@ urlpatterns = [
     # settings
     url(r'settings/$', views.SettingsView.as_view(), name="settings"),
 
-    # registration
-    url(r'addmoneyforreg/$', views.AddMoneyForRegFormView.as_view(), name="addmoneyforreg"),
-    url(r'groupplanforreg/$', views.GroupPlanAtRegFormView.as_view(), name="groupplanforreg"),
+    # subscription
+    url(r'subscription/$', views.SubscriptionFormView.as_view(), name="subscription"),
 ]

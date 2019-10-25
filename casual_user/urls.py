@@ -36,4 +36,7 @@ urlpatterns = [
 
     # settings
     url(r'settings/$', views.SettingsView.as_view(), name="settings"),
+
+    url(r'upgrade/$', views.ViewUpgradePageView.as_view(), name="upgrade"),
+    
 ]
