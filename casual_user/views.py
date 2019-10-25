@@ -30,14 +30,12 @@ from django.views.decorators.cache import cache_control
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='http://127.0.0.1:8000/login/')]
 
 def get_user_info(current_user):
-    try:
+    if current_user.user_type == 1:
         login_user = CasualUser.objects.get(user=current_user)
-    except:
-        pass
-    try:
+    elif current_user.user_type == 2:
         login_user = PremiumUser.objects.get(user=current_user)
-    except:
-        pass
+    else:
+        login_user = CommercialUser.objects.get(user=current_user)
     return login_user
 
 def savePost(request, current_user, visitor=""):
@@ -1195,7 +1193,8 @@ class ViewUpgradePageView(View):
             return render(request, self.template_name, {'casual_user': bundle})            
         else:
             bundle['paid'] = True #if user is no more casual user
-            return redirect('premium_user:addtoupdate')
+            #to decide where to redirect
+            #return redirect('premium_user:addtoupdate')
 
 def updatePaymentView(current_user):
     casual_user = CasualUser.objects.get(user=current_user)
@@ -1213,9 +1212,8 @@ def updatePaymentView(current_user):
         wallet.user_type = 2
         wallet.save()
         PremiumUser(user=userobj, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
-        numuser = len(PremiumUser.objects.filter(user=current_user))             
-        if numuser != 0:
-            casual_user.remove() #delete only if premium user exist
+        casual_user.remove()
+        
 
 
 @method_decorator(decorators, name='dispatch')

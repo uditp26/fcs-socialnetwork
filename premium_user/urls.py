@@ -11,6 +11,7 @@ urlpatterns = [
     url(r'listuser/$', views.ListUserView.as_view(), name='listuser'),
     path('listuser/<slug:username>/', views.UserProfileView.as_view(), name='userprofile'),
     
+    # friend
     url(r'friendrequest/$', views.FriendRequestView.as_view(), name='friendrequest'),
     url(r'friend/$', views.FriendView.as_view(), name='friend'),
 

@@ -13,7 +13,8 @@ from django.contrib.auth.hashers import (
 
 from django.conf import settings
 
-from .models import User, AddGroup, GroupPlan
+from login.models import User
+from .models import AddGroup, GroupPlan
 from casual_user.models import Friend
 
 from django.contrib.auth.tokens import default_token_generator
@@ -24,6 +25,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.utils.text import capfirst
 from django.utils.translation import gettext, gettext_lazy as _
+
 from phonenumber_field.formfields import PhoneNumberField
 
 class AddMoneyForm(forms.Form):

@@ -2,9 +2,9 @@ from django.shortcuts import render, reverse, redirect
 from django.views.generic import View
 from django.http import Http404
 
-from casual_user.models import Wallet, Transaction, Request, Post, Friend, FriendRequest, CasualUser, Timeline
 from login.models import User
 from .models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message
+from casual_user.models import Wallet, Transaction, Request, Post, Friend, FriendRequest, CasualUser, Timeline
 from .forms import AddGroupForm, GroupPlanForm, AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, OTPVerificationForm, SubscriptionForm
 
 from django.contrib.auth import logout
@@ -39,18 +39,16 @@ def priceofplan(plantype):
         noofgroup = 4
     else:
         price = 150
-        noofgroup = sys.float_info.max
+        noofgroup = sys.float_info.max      # stored as 10,000 in form/model field
     return price, noofgroup
 
 def get_user_info(current_user):
-    try:
+    if current_user.user_type == 1:
         login_user = CasualUser.objects.get(user=current_user)
-    except:
-        pass
-    try:
+    elif current_user.user_type == 2:
         login_user = PremiumUser.objects.get(user=current_user)
-    except:
-        pass
+    else:
+        login_user = CommercialUser.objects.get(user=current_user)
     return login_user
 
 def savePost(request, current_user, visitor=""):
@@ -308,12 +306,10 @@ class UserProfileView(View):
             gender = premium_user.gender
             email = premium_user.email
         else:                           #commercial-user
-            # commercial_user = CommercialUser.objects.get(user=user)
-            # dob = commercial_user.date_of_birth
-            # gender = commerical_user.gender
-            # email = commercial_user.email
-            pass
-
+            commercial_user = CommercialUser.objects.get(user=user)
+            dob = commercial_user.date_of_birth
+            gender = commerical_user.gender
+            email = commercial_user.email
         
         bundle = {'First Name': fname, 'Last Name':lname, 'Date of Birth': dob, 'Gender':gender,'Email':email}
         return render(request, self.template_name, {'bundle': bundle})
@@ -345,7 +341,6 @@ def user_friendlist(current_user, request):
 
     user_name_list = User.objects.filter(first_name__icontains = search_name)
     user_name_list = user_name_list.exclude(username = current_user.username)
-    
 
     bundle = dict()
     if user_name_list:
@@ -422,11 +417,11 @@ class ListUserView(View):
                 pass
         bundle, user_name_list = user_friendlist(current_user, request)
         return HttpResponseRedirect(reverse('premium_user:listuser'))
-        # return render(request, self.template_name, {'bundle': bundle})
 
 @method_decorator(decorators, name='dispatch')
 class FriendRequestView(View):
     template_name = 'premium_user/listfriendrequest.html'
+
     def get(self, request):
         current_user = request.user
         if PremiumUser.objects.get(user=current_user).subscription == 0:
@@ -480,14 +475,7 @@ class FriendRequestView(View):
                     break
             except:
                 pass
-        friendrequestObj = FriendRequest.objects.get(requestto = current_user.username)
-        friendlist = friendrequestObj.requestfrom
-        friendBundle = {}
-        for username in friendlist:
-            userObj = User.objects.get(username = username)
-            name = str(userObj.first_name) + ' ' +  str(userObj.last_name)
-            friendBundle[username] = name
-        return render(request, self.template_name, {'friendBundle': friendBundle})
+        return HttpResponseRedirect(reverse('premium_user:friendrequest'))
 
 def showfrndlist(username1):
     try:
@@ -557,12 +545,11 @@ class FriendView(View):
                     break
                 elif request.POST.dict()[selected_user] == "Post on Timeline":
                     request.session['owner'] = selected_user
-                    return redirect('casual_user:postcontent')
+                    return redirect('premium_user:postcontent')
             except:
                 pass
 
-        current_user, have_friend = showfrndlist(username1)
-        return render(request, self.template_name, {'current_user': current_user})
+        return HttpResponseRedirect(reverse('premium_user:friend'))
 
 #____________________________________________________Group_____________________________________________________
 #function needed in group search 
@@ -648,7 +635,6 @@ class ListGroupView(View):
         current_user = request.user
         username = current_user.username
         search_name = findGroup(request).lower()
-      
         bundle = request_group(current_user, search_name)
 
         for keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel in bundle:
@@ -1238,10 +1224,6 @@ class PendingRequestsView(View):
                     curr_request.status = 2
                     curr_request.save()
 
-        # pay_requests = Request.objects.filter(receiver=current_user, status=0)
-        # bundle = dict()
-        # bundle['requests'] = pay_requests
-        # return render(request, self.template_name, {'pay_req': bundle})
         return HttpResponseRedirect(reverse('premium_user:pendingrequests'))
 
 
@@ -1279,14 +1261,17 @@ class OTPVerificationFormView(View):
                         if  plan == "1":
                             amount = request.session['sub_amount']
                             amount = amount - 50
+                            # Add no. of groups the user can create here
                             flag = True
                         elif plan == "2":
                             amount = request.session['sub_amount']
                             amount = amount - 100
+                            # Add no. of groups the user can create here
                             flag = True
                         elif plan == "3":
                             amount = request.session['sub_amount']
                             amount = amount - 150
+                            # Add no. of groups the user can create here
                             flag = True
                         else:
                             form.add_error('otp', 'Unknown transaction!')
@@ -1389,36 +1374,6 @@ class OTPVerificationFormView(View):
 
         return render(request, self.template_name, {'form': form})
 
-@method_decorator(decorators, name='dispatch')
-class PostContentView(View):
-    template_name = 'premium_user/postcontent.html'
-
-    def get(self, request):
-        if PremiumUser.objects.get(user=request.user).subscription == 0:
-            return HttpResponseRedirect(reverse('premium_user:subscription'))
-        owner = request.session.get('owner')
-        owner = User.objects.get(username=owner).first_name + " " + User.objects.get(username=owner).last_name
-        visitor = request.user
-        visitor = User.objects.get(username=visitor).first_name + " " + User.objects.get(username=visitor).last_name
-        return render(request, self.template_name, {'owner':owner, 'visitor':visitor})
-
-    def post(self, request):
-        owner = request.session.get('owner')
-        visitor = request.user
-        savePost(request, owner, visitor)
-        request.session.pop('owner', None)
-        request.session.modified = True
-        return redirect('premium_user:friend')
-
-@method_decorator(decorators, name='dispatch')
-class NofriendsView(View):
-    template_name = 'premium_user/nofriends.html'
-
-    def get(self, request):
-        if PremiumUser.objects.get(user=request.user).subscription == 0:
-            return HttpResponseRedirect(reverse('premium_user:subscription'))
-        return render(request, self.template_name)
-
 #_________________________________________________Message______________________________________________________
 def getfriendlist(username1):
     try:
@@ -1484,7 +1439,6 @@ class InboxView(View):
         for i in friendlist:
             try:
                 selected_user = i
-
                 if request.POST.dict()[selected_user] == "Send Message":
                     usernameObj.username = ""
                     usernameObj.username = selected_user
@@ -1519,31 +1473,53 @@ def showmessages(sender, receiver):
 @method_decorator(decorators, name='dispatch')
 class ChatView(View):
     template_name = 'premium_user/chat.html'
+
     def get(self, request):
         current_user = request.user
         if PremiumUser.objects.get(user=current_user).subscription == 0:
             return HttpResponseRedirect(reverse('premium_user:subscription'))
-        username1 = current_user.username; sender = username1
+        sender = current_user.username
         receiver = usernameObj.username
-        
         updatemessages = showmessages(sender, receiver)
-
         msg = {'updatemessages':updatemessages}
         return render(request, self.template_name, {'msg': msg})
 
     def post(self, request):
-
         current_user = request.user
-        username1 = current_user.username
-        sender = username1
+        sender = current_user.username
         receiver = usernameObj.username
-
         saveMessage(self, request, sender, receiver)
-        
-        updatemessages = showmessages(sender, receiver)
-        msg = {'updatemessages':updatemessages}
         return HttpResponseRedirect(reverse('premium_user:chat'))
-        # return render(request, self.template_name, {'msg': msg})
+
+@method_decorator(decorators, name='dispatch')
+class PostContentView(View):
+    template_name = 'premium_user/postcontent.html'
+
+    def get(self, request):
+        if PremiumUser.objects.get(user=request.user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
+        owner = request.session.get('owner')
+        owner = User.objects.get(username=owner).first_name + " " + User.objects.get(username=owner).last_name
+        visitor = request.user
+        visitor = User.objects.get(username=visitor).first_name + " " + User.objects.get(username=visitor).last_name
+        return render(request, self.template_name, {'owner':owner, 'visitor':visitor})
+
+    def post(self, request):
+        owner = request.session.get('owner')
+        visitor = request.user
+        savePost(request, owner, visitor)
+        request.session.pop('owner', None)
+        request.session.modified = True
+        return redirect('premium_user:friend')
+
+@method_decorator(decorators, name='dispatch')
+class NofriendsView(View):
+    template_name = 'premium_user/nofriends.html'
+
+    def get(self, request):
+        if PremiumUser.objects.get(user=request.user).subscription == 0:
+            return HttpResponseRedirect(reverse('premium_user:subscription'))
+        return render(request, self.template_name)
 
 @method_decorator(decorators, name='dispatch')
 class SettingsView(View):

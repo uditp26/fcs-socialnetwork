@@ -1,0 +1,35 @@
+{% extends 'commercial_user/base.html' %}
+
+{% block body %}
+
+<div>
+	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
+        <h1 style="text-indent: 15cm"><font color="white">Timeline Settings</font></h1>
+        <h4 style="text-indent: 15cm"><font color="white">Change who can post on your timeline</font></h4>
+	</div>
+</div>
+
+<div class="col-xs-offset-4 col-lg-6">
+    <div class="card bg-dark text-white" style="padding: 1cm">
+        <h4 class="card-title">Alter Settings</h4>
+        <div class="card-header">
+            <p>By default, your friends can post on your timeline. <br></p>
+            <p>Currently your privacy settings is set to {{ level }}</p>
+        </div>
+        <div class="card-body">
+                <form id="postForm" name="pform" method="POST">
+                {% csrf_token %}
+                    <label>Who can post on my timeline: </label>
+                    <select name="level">
+                        <option value="0">Only Me</option>
+                        <option value="1">Friends</option>
+                    </select>
+                    <button type="submit" name="updateButton">Update</button>
+                </form>
+        </div>
+        <div class="card-footer">
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -15,7 +15,8 @@ from django.conf import settings
 
 from login.models import User
 from .models import CommercialUser
-from premium_user.models import AddGroup
+from casual_user.models import Friend
+from premium_user.models import AddGroup, GroupPlan, GroupPlan
 
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.sites.shortcuts import get_current_site
@@ -36,17 +37,27 @@ class AddGroupForm(forms.Form):
         model = AddGroup
         fields = [ 'name', 'gtype', 'price']
 
-class EditProfileForm(forms.Form):
-    first_name = forms.CharField(max_length=50)
-    last_name = forms.CharField(max_length=50)
-    date_of_birth = forms.DateTimeField(widget=forms.TextInput(attrs={'class':'datetime-input'}))
-    gender = forms.ChoiceField(choices=[(1, 'Male'), (2, 'Female'), (3, 'Transgender')],
-    widget = forms.RadioSelect)
-    phone = PhoneNumberField(widget=forms.TextInput(), required=False)
+class AddMoneyNewForm(forms.Form):
+    amount = forms.DecimalField(decimal_places=2, min_value=5000, required=False)
+
+    class Meta:
+        # model
+        fields = ['amount']
+
+class CreatePagesForm(forms.Form):
+    page_title = forms.CharField(max_length=50, required=True, widget=forms.Textarea(attrs={'cols':50,'rows':1}))
+    page_description = forms.CharField(max_length=250, required=True, widget=forms.Textarea(attrs={'cols':50,'rows':15}))
     
     class Meta:
-        # model = User
-        fields = [ 'first_name', 'last_name', 'date_of_birth', 'gender', 'phone' ]
+        #model = Pages
+        fields = [ 'page_title', 'page_description' ]
+
+class VerifyPanForm(forms.Form):
+    pan_Card_Number = forms.IntegerField(min_value=10000000, max_value=99999999, required=False)
+    
+    class Meta:
+        # model
+        fields = ['pan_Card_Number']
 
 class AddMoneyForm(forms.Form):
     amount = forms.DecimalField(decimal_places=2, min_value=0)
@@ -68,6 +79,18 @@ class SendMoneyForm(forms.Form):
         # model
         fields = ['send_to', 'amount']
 
+class EditProfileForm(forms.Form):
+    first_name = forms.CharField(max_length=50)
+    last_name = forms.CharField(max_length=50)
+    date_of_birth = forms.DateTimeField(widget=forms.TextInput(attrs={'class':'datetime-input'}))
+    gender = forms.ChoiceField(choices=[(1, 'Male'), (2, 'Female'), (3, 'Transgender')],
+    widget = forms.RadioSelect)
+    phone = PhoneNumberField(widget=forms.TextInput(), required=False)
+    
+    class Meta:
+        # model = User
+        fields = [ 'first_name', 'last_name', 'date_of_birth', 'gender', 'phone' ]
+
 class RequestMoneyForm(forms.Form):
     amount = forms.DecimalField(decimal_places=2, min_value=0)
 
@@ -81,33 +104,24 @@ class RequestMoneyForm(forms.Form):
         # model
         fields = ['request_from', 'amount']
 
-class CreatePagesForm(forms.Form):
-    page_title = forms.CharField(max_length=50, required=True, widget=forms.Textarea(attrs={'cols':50,'rows':1}))
-    page_description = forms.CharField(max_length=250, required=True, widget=forms.Textarea(attrs={'cols':50,'rows':15}))
-    
-    class Meta:
-        #model = Pages
-        fields = [ 'page_title', 'page_description' ]
-
-#class CreatePagesDetailForm(forms.Form):
- #   author = forms.CharField(max_length=30)
-  #  page_title = forms.CharField(max_length=50, required=True, widget=forms.Textarea(attrs={'cols':50,'rows':1}))
-   # page_description = forms.CharField(max_length=250, required=True, widget=forms.Textarea(attrs={'cols':50,'rows':15}))
-    #page_link = forms.CharField(max_length=100)
-    
-    #class Meta:
-        #model = Pages
-     #   fields = [ 'author', 'page_title', 'page_description', 'page_link' ]
-class AddMoneyNewForm(forms.Form):
-    amount = forms.DecimalField(decimal_places=2, min_value=5000, required=False)
+class AddGroupForm(forms.Form):
+    name = forms.CharField(max_length=50)
+    gtype = forms.ChoiceField(choices=[(1, 'Free'), (2, 'Premium')],widget = forms.RadioSelect)
+    price = forms.FloatField(required=False, min_value=0)
 
     class Meta:
-        # model
-        fields = ['amount']
+        model = AddGroup
+        fields = [ 'name', 'gtype', 'price']
 
-class VerifyPanForm(forms.Form):
-    pan_Card_Number = forms.IntegerField(min_value=10000000, max_value=99999999, required=False)
-    
+class GroupPlanForm(forms.Form):
+    plantype = forms.ChoiceField(choices=[(1, 'Silver'), (2, 'Gold'), (3, 'Platinum')],widget = forms.RadioSelect)
+
     class Meta:
-        # model
-        fields = ['pan_Card_Number']
+        model = GroupPlan
+        fields = ['plantype']
+
+class OTPVerificationForm(forms.Form):
+    otp = forms.CharField(max_length=4, widget=forms.TextInput(attrs={'class':'open-keyboard'}))
+
+    class Meta:
+        fields = ['otp']

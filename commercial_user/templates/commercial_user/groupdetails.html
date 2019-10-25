@@ -1,4 +1,4 @@
-{% extends 'premium_user/base.html' %}
+{% extends 'commercial_user/base.html' %}
 
 {% block body %}
 
@@ -82,10 +82,10 @@
     <div class="col-lg-3">
         <table class="table table-striped table-bordered text-center">
             <tbody>
-                <!-- <tr><td><a href="{% url 'premium_user:groupplan' %}">Select Plan</a></td></tr> -->
-                <tr><td><a href="{% url 'premium_user:addgroup' %}">Add Group</a></td></tr>
-                <tr><td><a href="{% url 'premium_user:listrequest' %}">View Request</a></td></tr>
-                <tr><td><a href="{% url 'premium_user:deletegroup' %}">Delete Group</a></td></tr>
+                <!-- <tr><td><a href="{% url 'commercial_user:groupplan' %}">Select Plan</a></td></tr> -->
+                <tr><td><a href="{% url 'commercial_user:addgroup' %}">Add Group</a></td></tr>
+                <tr><td><a href="{% url 'commercial_user:listrequest' %}">View Request</a></td></tr>
+                <tr><td><a href="{% url 'commercial_user:deletegroup' %}">Delete Group</a></td></tr>
             </tbody>
         </table>
     </div>

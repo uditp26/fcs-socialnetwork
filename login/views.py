@@ -115,9 +115,6 @@ class LoginFormView(View):
                         # redirect to respective page
                         if radio_btn == '1':
                             return redirect('casual_user:homepage')
-                        # elif radio_btn == '2':
-                        #     return redirect('premium_user:homepage')
-                        
                         elif radio_btn == '2':
                             return redirect('premium_user:subscription')
                         else:
