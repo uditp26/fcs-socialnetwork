@@ -14,7 +14,6 @@ class CommercialUser(models.Model):
     subscription_paid = models.BooleanField(default=False)
     statusofrequest = models.SmallIntegerField(default=1) #value 1 means no request sent, 4 means request sent but pending
     #, 2 means request accepted and 3 means request declined
-    #value may change from 1 to 2 or 1 to 3 but cannot change once value is 2 or 3
     
     def __str__(self):
         return self.email
