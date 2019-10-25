@@ -127,16 +127,7 @@ def GetAllPageInfo(current_user):
 
 
 class PaymentView(View):
-    #template_name = 'commercial_user/addmoneynew.html'
-    #homepage_name = 'commercial_user/'
-    #go to addmoney.html in case money is less than Rs 5000
-    #pass old wallet value, if its reduced by 5000, make subscription_paid = True of Wallet class
-    #if subscription_paid = False and amount<Rs 5000, then redirect to addmoney2.html, and then go to payment.html
-    #if amount becomes > 5000
-    #if subscription_paid = False and amount>Rs 5000, then go to payment.html
-    #addmoney2.html - it is just for subscription payment, if amount becomes>5000, it comes back to payment.html
-    #addmoney.html - default website to add payment
-
+    
     def get(self, request):
         current_user = request.user
         if str(current_user) is 'AnonymousUser':
@@ -154,21 +145,12 @@ class PaymentView(View):
                     return redirect('commercial_user:homepage')
                 else:
                     return redirect('commercial_user:addmoneytosubscribe')
-            elif statusofrequest == 1: #pending, not validated yet
+            elif statusofrequest == 1 or statusofrequest == 4: #pending, not validated yet
                 return redirect('commercial_user:verifypan')
             else: #if not valid pan, then redirect to another page. Suggest user to sign
                 #up for premium or casual user, and redirect to register page
                 return redirect('commercial_user:denied')
 
-def isPanValid(pancard):
-    panstring = str(pancard)
-    squaredsum = 0
-    for i in range(len(panstring)):
-        squaredsum += int(panstring[i])*int(panstring[i])
-    if squaredsum%5 == 0:
-        return False
-    else:
-        return True
 
 class VerifyPanFormView(View):
     form_class = VerifyPanForm
@@ -217,42 +199,11 @@ class VerifyPanFormView(View):
                 #Add code to send email to admin
                 # username = c_user.username
                 # send_email(sender=admin@gmail.com,subject="Verification request",body="Request from Username="+username)
-
-                requeststatus = c_user.statusofrequest
-                commercial_user = {'status':requeststatus}
-                return render(request, self.template_name, {'commercial_user':commercial_user})
+                return HttpResponseRedirect(reverse('commercial_user:verifypan'))
+                
             elif requeststatus == 4:
-                commercial_user = {'status':requeststatus}
-                return render(request, self.template_name, {'commercial_user':commercial_user})
-                # if previous_pan != 0:
-                #     return HttpResponseRedirect(reverse('commerical_user:verifypan'))
-                    # form.add_error('pan_Card_Number', "PAN Card Number already exists for your account. ")
-                    # commercial_user = {'status':requeststatus, 'form':form}
-                    # return render(request, self.template_name, {'commercial_user':commercial_user})
-                    # if previous_pan == 0:
-                    #     if pan_card is None:
-                    #         form.add_error('pan_Card_Number', "Field is empty. Please enter PAN Card Number. ")
-                    #         commercial_user = {'status':requeststatus, 'form':form}
-                    #         return render(request, self.template_name, {'commercial_user':commercial_user})
-                    #     else:
-                    #         same_pan = len(CommercialUser.objects.filter(pan=pan_card))
-                    #         if same_pan != 0:
-                    #             form.add_error('pan_Card_Number', "PAN Card Number already exists. ")
-                    #             commercial_user = {'status':requeststatus, 'form':form}
-                    #             return render(request, self.template_name, {'commercial_user':commercial_user})
-                    #         else:
-                    #             c_user.pan = pan_card
-                    #             c_user.save()
-                    #             pan_card = c_user.pan
-                    #             panstatus = isPanValid(pan_card)
-                    #             if panstatus == False:
-                    #                 c_user.statusofrequest = 3 #denied
-                    #                 c_user.save()
-                    #                 return redirect('commercial_user:denied')
-                    #             else:
-                    #                 c_user.statusofrequest = 2 #verified
-                    #                 c_user.save()
-                    #                 return redirect('commercial_user:addmoneytosubscribe')
+                return HttpResponseRedirect(reverse('commercial_user:verifypan'))
+                
             elif requeststatus == 2:
                 return redirect('commercial_user:addmoneytosubscribe')
             elif requeststatus == 3:
@@ -315,7 +266,7 @@ class AddMoneyFormToSubscribeView(View):
                 elif subs_paid == False and amount>=5000:
                     commercial_user = {'amount':amount, 'status':subs_paid}
                 return render(request, self.template_name, {'commercial_user': commercial_user})
-            elif statusofrequest == 1: #pending, not validated yet
+            elif statusofrequest == 1 or statusofrequest == 4: #pending, not validated yet
                 return redirect('commercial_user:verifypan')
             else: #if not valid pan, then redirect to another page. Suggest user to sign
                 #up for premium or casual user, and redirect to register page
@@ -405,7 +356,7 @@ class AddMoneyFormToSubscribeView(View):
                     
                     return render(request, self.template_name, {'commercial_user':commercial_user})
 
-        elif statusofrequest == 1: #pending, not validated yet
+        elif statusofrequest == 1 or statusofrequest == 4: #pending, not validated yet
             return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -429,7 +380,7 @@ class MainHomepageView(View):
                     return render(request, self.template_name, {'bundle':bundle})
                 else:
                     return redirect('commercial_user:addmoneytosubscribe')
-            elif c_user.statusofrequest == 1: #pending, not validated yet
+            elif c_user.statusofrequest == 1 or c_user.statusofrequest == 4: #pending, not validated yet
                 return redirect('commercial_user:verifypan')
 
             else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -448,7 +399,7 @@ class MainHomepageView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif c_user.statusofrequest == 1: #pending, not validated yet
+        elif c_user.statusofrequest == 1 or c_user.statusofrequest == 4: #pending, not validated yet
                 return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -485,7 +436,7 @@ class ProfileView(View):
                 else:
                     return redirect('commercial_user:addmoneytosubscribe')
 
-            elif casual_user.statusofrequest == 1: #pending, not validated yet
+            elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
                 return redirect('commercial_user:verifypan')
 
             else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -537,7 +488,7 @@ class CreatePagesFormView(View):
                 else:
                     return redirect('commercial_user:addmoneytosubscribe')
             
-            elif commercial_user.statusofrequest == 1: #pending, not validated yet
+            elif commercial_user.statusofrequest == 1 or commercial_user.statusofrequest == 4: #pending, not validated yet
                 return redirect('commercial_user:verifypan')
 
             else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -581,7 +532,7 @@ class CreatePagesFormView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif commercial_user.statusofrequest == 1: #pending, not validated yet
+        elif commercial_user.statusofrequest == 1 or commercial_user.statusofrequest == 4: #pending, not validated yet
                 return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -619,7 +570,7 @@ class MyPagesListView(View):
                 else:
                     return redirect('commercial_user:addmoneytosubscribe')
 
-            elif commercial_user.statusofrequest == 1: #pending, not validated yet
+            elif commercial_user.statusofrequest == 1 or commercial_user.statusofrequest == 4: #pending, not validated yet
                 return redirect('commercial_user:verifypan')
 
             else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -661,7 +612,7 @@ class ViewMyPageView(View):
                 else:
                     return redirect('commercial_user:addmoneytosubscribe')
 
-            elif commercial_user.statusofrequest == 1: #pending, not validated yet
+            elif commercial_user.statusofrequest == 1 or commercial_user.statusofrequest == 4: #pending, not validated yet
                 return redirect('commercial_user:verifypan')
 
             else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -698,7 +649,7 @@ class EditProfileFormView(View):
                 else:
                     return redirect('commercial_user:addmoneytosubscribe')
 
-            elif casual_user.statusofrequest == 1: #pending, not validated yet
+            elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
                 return redirect('commercial_user:verifypan')
 
             else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -731,7 +682,7 @@ class EditProfileFormView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif casual_user.statusofrequest == 1: #pending, not validated yet
+        elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
                 return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -754,7 +705,7 @@ class AddGroupFormView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif casual_user.statusofrequest == 1: #pending, not validated yet
+        elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
                 return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -795,7 +746,7 @@ class AddGroupFormView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif casual_user.statusofrequest == 1: #pending, not validated yet
+        elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
             return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -832,7 +783,7 @@ class ListRequestView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif casual_user.statusofrequest == 1: #pending, not validated yet
+        elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
             return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -880,7 +831,7 @@ class ListRequestView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif casual_user.statusofrequest == 1: #pending, not validated yet
+        elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
             return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -908,7 +859,7 @@ class WalletView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif casual_user.statusofrequest == 1: #pending, not validated yet
+        elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
             return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -930,7 +881,7 @@ class AddMoneyFormView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif casual_user.statusofrequest == 1: #pending, not validated yet
+        elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
             return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -974,7 +925,7 @@ class AddMoneyFormView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif casual_user.statusofrequest == 1: #pending, not validated yet
+        elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
             return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -996,7 +947,7 @@ class SendMoneyFormView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif casual_user.statusofrequest == 1: #pending, not validated yet
+        elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
             return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -1047,7 +998,7 @@ class SendMoneyFormView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif casual_user.statusofrequest == 1: #pending, not validated yet
+        elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
             return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -1068,7 +1019,7 @@ class RequestMoneyFormView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif casual_user.statusofrequest == 1: #pending, not validated yet
+        elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
             return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign
@@ -1118,7 +1069,7 @@ class RequestMoneyFormView(View):
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
-        elif casual_user.statusofrequest == 1: #pending, not validated yet
+        elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
             return redirect('commercial_user:verifypan')
 
         else: #if not valid pan, then redirect to another page. Suggest user to sign

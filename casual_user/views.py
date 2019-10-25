@@ -673,7 +673,8 @@ class ViewUpgradePageView(View):
             return render(request, self.template_name, {'casual_user': bundle})            
         else:
             bundle['paid'] = True #if user is no more casual user
-            return redirect('premium_user:addtoupdate')
+            #to decide where to redirect
+            #return redirect('premium_user:addtoupdate')
 
 def updatePaymentView(current_user):
     casual_user = CasualUser.objects.get(user=current_user)
@@ -691,9 +692,7 @@ def updatePaymentView(current_user):
         wallet.user_type = 2
         wallet.save()
         PremiumUser(user=userobj, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
-        numuser = len(PremiumUser.objects.filter(user=current_user))             
-        if numuser != 0:
-            casual_user.remove() #delete only if premium user exist
+        casual_user.remove() #delete only if premium user exist
         
 
 class LogoutView(View):
