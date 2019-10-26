@@ -12,7 +12,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
 from django import forms
 
-from .forms import AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, OTPVerificationForm
+from .forms import AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, OTPVerificationForm, SubscriptionForm
 
 from datetime import datetime
 
@@ -1187,14 +1187,17 @@ class ViewUpgradePageView(View):
     def get(self, request):
         bundle = dict()
         current_user = request.user
-        users = len(CasualUser.objects.filter(user=current_user))
-        if users != 0:
-            bundle['paid'] = False
-            return render(request, self.template_name, {'casual_user': bundle})            
+        if str(current_user) is 'AnonymousUser':
+            raise Http404
         else:
-            bundle['paid'] = True #if user is no more casual user
-            #to decide where to redirect
-            #return redirect('premium_user:addtoupdate')
+            users = len(CasualUser.objects.filter(user=current_user))
+            if users != 0:
+                bundle['paid'] = False
+                return render(request, self.template_name, {'casual_user': bundle})            
+            else:
+                bundle['paid'] = True #if user is no more casual user
+                #to decide where to redirect
+                return redirect('premium_user:homepage')
 
 def updatePaymentView(current_user):
     casual_user = CasualUser.objects.get(user=current_user)
@@ -1214,6 +1217,50 @@ def updatePaymentView(current_user):
         PremiumUser(user=userobj, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
         casual_user.remove()
         
+class SubscriptionFormView(View):
+    form_class = SubscriptionForm
+    template_name = 'casual_user/subscriptionform.html'
+
+    def get(self, request):
+        current_user = request.user
+        form = self.form_class(None)
+        if str(current_user) is 'AnonymousUser':
+            raise Http404
+        else:
+            casual_users = len(CasualUser.objects.filter(user=current_user))
+        
+            if casual_users == 0:
+                 return HttpResponseRedirect(reverse('premium_user:homepage'))
+            else:
+                return render(request, self.template_name, {'form':form})
+        
+    def post(self, request):
+        current_user = request.user
+        form = self.form_class(request.POST)
+
+        if form.is_valid():
+            amount = form.cleaned_data['amount']
+            plan = form.cleaned_data['subscription_plan']
+            
+            if plan == "2" and amount < 100:
+                form.add_error('amount', 'Enter amount greater than Rs. 100')
+            elif plan == "3" and amount < 150:
+                form.add_error('amount', 'Enter amount greater than Rs. 150')
+            else:
+                email = User.objects.get(username=str(current_user)).email
+                subject = 'OTP for Subscription Payment'
+                c = sendOTP(request, email, subject)
+
+                if c == 1:
+                    #suggestion needed here
+                    #request.session['amountvalue'] = amount
+                    #request.session['planname'] = plan
+                    return HttpResponseRedirect(reverse('casual_user:otpverify'))
+                else:
+                    form.add_error('amount', 'OTP generation failed. Please check your network connection.')    
+            
+        return render(request, self.template_name, {'form':form})
+
 
 
 @method_decorator(decorators, name='dispatch')

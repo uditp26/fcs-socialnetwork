@@ -20,7 +20,7 @@ urlpatterns = [
      
     #wallet
     url(r'mywallet/$', views.WalletView.as_view(), name="wallet"),
-    url(r'mywallet/otpverify/$', views.OTPVerificationFormView.as_view(), name="otpverify"),
+    url(r'mywallet/verifyotp/$', views.OTPVerificationFormView.as_view(), name="otpverify"),
     url(r'mywallet/addmoney/$', views.AddMoneyFormView.as_view(), name="addmoney"),
     url(r'mywallet/sendmoney/$', views.SendMoneyFormView.as_view(), name="sendmoney"),
     url(r'mywallet/requestmoney/$', views.RequestMoneyFormView.as_view(), name="requestmoney"),
@@ -38,5 +38,5 @@ urlpatterns = [
     url(r'settings/$', views.SettingsView.as_view(), name="settings"),
 
     url(r'upgrade/$', views.ViewUpgradePageView.as_view(), name="upgrade"),
-    
+    url(r'subscription/$', views.SubscriptionFormView.as_view(), name="subscription"),
 ]

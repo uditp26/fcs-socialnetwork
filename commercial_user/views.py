@@ -301,7 +301,7 @@ class AddMoneyFormToSubscribeView(View):
             form = self.form_class(None)
             if statusofrequest == 2:
                 if subs_paid == True:
-                    commercial_user = {'amount':amount, 'status':subs_paid}
+                    return redirect('commercial_user:homepage')
                 elif subs_paid == False and amount<5000:
                     commercial_user = {'amount':amount, 'status':subs_paid, 'form':form}
                 elif subs_paid == False and amount>=5000:
@@ -484,8 +484,21 @@ class GroupDetailsView(View):
 
     def get(self, request):
         current_user = request.user
-        bundle = getgroupdetails(current_user)
-        return render(request, self.template_name, {'bundle':bundle})
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                bundle = getgroupdetails(current_user)
+                return render(request, self.template_name, {'bundle':bundle})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+                #up for premium or casual user, and redirect to register page 
+                return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+                return redirect('commercial_user:verifypan')
+        
 
 @method_decorator(decorators, name='dispatch')
 class ProfileView(View):
@@ -778,28 +791,42 @@ class UserProfileView(View):
     template_name = 'commercial_user/userprofile.html'
 
     def get(self, request, username):
-        user = User.objects.get(username=username)
-        fname = user.first_name
-        lname = user.last_name
-        
-        if user.user_type == 1:         # casual-user
-            casual_user = CasualUser.objects.get(user=user)
-            dob = casual_user.date_of_birth
-            gender = casual_user.gender
-            email = casual_user.email
-        elif user.user_type == 2:       #premium-user
-            premium_user = PremiumUser.objects.get(user=user)
-            dob = premium_user.date_of_birth
-            gender = premium_user.gender
-            email = premium_user.email
-        else:                           #commercial-user
-            commercial_user = CommercialUser.objects.get(user=user)
-            dob = commercial_user.date_of_birth
-            gender = commerical_user.gender
-            email = commercial_user.email
-        
-        bundle = {'First Name': fname, 'Last Name':lname, 'Date of Birth': dob, 'Gender':gender,'Email':email}
-        return render(request, self.template_name, {'bundle': bundle})
+        current_user = request.user
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                user = User.objects.get(username=username)
+                fname = user.first_name
+                lname = user.last_name
+                
+                if user.user_type == 1:         # casual-user
+                    casual_user = CasualUser.objects.get(user=user)
+                    dob = casual_user.date_of_birth
+                    gender = casual_user.gender
+                    email = casual_user.email
+                elif user.user_type == 2:       #premium-user
+                    premium_user = PremiumUser.objects.get(user=user)
+                    dob = premium_user.date_of_birth
+                    gender = premium_user.gender
+                    email = premium_user.email
+                else:                           #commercial-user
+                    commercial_user = CommercialUser.objects.get(user=user)
+                    dob = commercial_user.date_of_birth
+                    gender = commerical_user.gender
+                    email = commercial_user.email
+                
+                bundle = {'First Name': fname, 'Last Name':lname, 'Date of Birth': dob, 'Gender':gender,'Email':email}
+                return render(request, self.template_name, {'bundle': bundle})
+
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+                #up for premium or casual user, and redirect to register page 
+                return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+                return redirect('commercial_user:verifypan')
 
 def findfriend(request):
     q=""
@@ -860,46 +887,73 @@ class ListUserView(View):
     
     def get(self, request):
         current_user = request.user
-        bundle, user_name_list = user_friendlist(current_user, request)
-        return render(request, self.template_name, {'bundle': bundle})
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                bundle, user_name_list = user_friendlist(current_user, request)
+                return render(request, self.template_name, {'bundle': bundle})
+
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
 
     def post(self, request):
         current_user = request.user
-        bundle, user_name_list = user_friendlist(current_user, request)
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                bundle, user_name_list = user_friendlist(current_user, request)
 
-        for i in user_name_list:
-            try:
-                selected_user = i.username
-                if request.POST.dict()[selected_user] == "Add Friend":
+                for i in user_name_list:
                     try:
-                        try:
-                            requestto1 = FriendRequest.objects.get(requestto = current_user.username)
-                            if selected_user in requestto1.requestfrom:
-                                return redirect('commercial_user:friendrequest')
-                        except:
-                            pass
-                        requestto = FriendRequest.objects.get(requestto = selected_user)
-                        requestto.requestfrom.append(current_user.username)
-                        requestto.save()
-                        break
+                        selected_user = i.username
+                        if request.POST.dict()[selected_user] == "Add Friend":
+                            try:
+                                try:
+                                    requestto1 = FriendRequest.objects.get(requestto = current_user.username)
+                                    if selected_user in requestto1.requestfrom:
+                                        return redirect('commercial_user:friendrequest')
+                                except:
+                                    pass
+                                requestto = FriendRequest.objects.get(requestto = selected_user)
+                                requestto.requestfrom.append(current_user.username)
+                                requestto.save()
+                                break
+                            except:
+                                FriendRequest(requestto = selected_user, requestfrom = [current_user.username]).save()
+                                break
+
+                        elif request.POST.dict()[selected_user] == "Unfriend":
+                            have_friend = Friend.objects.get(username = current_user.username)
+                            have_friend.friend_list.remove(selected_user)
+                            have_friend.save()
+
+                            #for implementation of bi-direction remove_friend
+                            b_user_friendlist = Friend.objects.get(username = selected_user)
+                            b_user_friendlist.friend_list.remove(current_user.username)
+                            b_user_friendlist.save()
+                            break
                     except:
-                        FriendRequest(requestto = selected_user, requestfrom = [current_user.username]).save()
-                        break
+                        pass
+                bundle, user_name_list = user_friendlist(current_user, request)
+                return HttpResponseRedirect(reverse('commercial_user:listuser'))        
 
-                elif request.POST.dict()[selected_user] == "Unfriend":
-                    have_friend = Friend.objects.get(username = current_user.username)
-                    have_friend.friend_list.remove(selected_user)
-                    have_friend.save()
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
 
-                    #for implementation of bi-direction remove_friend
-                    b_user_friendlist = Friend.objects.get(username = selected_user)
-                    b_user_friendlist.friend_list.remove(current_user.username)
-                    b_user_friendlist.save()
-                    break
-            except:
-                pass
-        bundle, user_name_list = user_friendlist(current_user, request)
-        return HttpResponseRedirect(reverse('commercial_user:listuser'))
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+        
 
 @method_decorator(decorators, name='dispatch')
 class FriendRequestView(View):
@@ -907,56 +961,85 @@ class FriendRequestView(View):
 
     def get(self, request):
         current_user = request.user
-        try:
-            friendrequestObj = FriendRequest.objects.get(requestto = current_user.username)
-            friendlist = friendrequestObj.requestfrom
-            friendBundle = {}
-            for username in friendlist:
-                userObj = User.objects.get(username = username)
-                name = str(userObj.first_name) + ' ' +  str(userObj.last_name)
-                friendBundle[username] = name
-        except:
-            friendBundle = {}
-        return render(request, self.template_name, {'friendBundle': friendBundle})
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                try:
+                    friendrequestObj = FriendRequest.objects.get(requestto = current_user.username)
+                    friendlist = friendrequestObj.requestfrom
+                    friendBundle = {}
+                    for username in friendlist:
+                        userObj = User.objects.get(username = username)
+                        name = str(userObj.first_name) + ' ' +  str(userObj.last_name)
+                        friendBundle[username] = name
+                except:
+                    friendBundle = {}
+                return render(request, self.template_name, {'friendBundle': friendBundle})        
+
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+
+       
 
     def post(self, request):
         current_user = request.user
-        friendrequestObj = FriendRequest.objects.get(requestto = current_user.username)
-        friendlist = friendrequestObj.requestfrom
-        for i in friendlist:
-            try:
-                selected_user = i
-                if request.POST.dict()[str(i)] == "accept":
-                    friendrequestObj = FriendRequest.objects.get(requestto = current_user.username)
-                    friendrequestObj.requestfrom.remove(selected_user)
-                    friendrequestObj.save()
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+        
+                friendrequestObj = FriendRequest.objects.get(requestto = current_user.username)
+                friendlist = friendrequestObj.requestfrom
+                for i in friendlist:
                     try:
-                        friendObj = Friend.objects.get(username = current_user.username)
-                        friendObj.friend_list.append(selected_user)
-                        friendObj.save()
+                        selected_user = i
+                        if request.POST.dict()[str(i)] == "accept":
+                            friendrequestObj = FriendRequest.objects.get(requestto = current_user.username)
+                            friendrequestObj.requestfrom.remove(selected_user)
+                            friendrequestObj.save()
+                            try:
+                                friendObj = Friend.objects.get(username = current_user.username)
+                                friendObj.friend_list.append(selected_user)
+                                friendObj.save()
+                            except:
+                                Friend(username = current_user.username, friend_list = [selected_user]).save()
+                            # for implementation of bi-direction add_friend
+                            try:
+                                b_user_friendlist = Friend.objects.get(username = selected_user)
+                                b_user_friendlist.friend_list.append(current_user.username)
+                                b_user_friendlist.save()
+                            except:
+                                b_user_friendlist = Friend()
+                                b_user_friendlist.username = selected_user
+                                current_user_friendlist = []
+                                b_user_friendlist.friend_list = current_user_friendlist
+                                b_user_friendlist.friend_list.append(current_user.username)
+                                b_user_friendlist.save()
+                            break
+                        elif request.POST.dict()[str(i)] == "reject":
+                            friendrequestObj = FriendRequest.objects.get(requestto = current_user.username)
+                            friendrequestObj.requestfrom.remove(selected_user)
+                            friendrequestObj.save()
+                            break
                     except:
-                        Friend(username = current_user.username, friend_list = [selected_user]).save()
-                    # for implementation of bi-direction add_friend
-                    try:
-                        b_user_friendlist = Friend.objects.get(username = selected_user)
-                        b_user_friendlist.friend_list.append(current_user.username)
-                        b_user_friendlist.save()
-                    except:
-                        b_user_friendlist = Friend()
-                        b_user_friendlist.username = selected_user
-                        current_user_friendlist = []
-                        b_user_friendlist.friend_list = current_user_friendlist
-                        b_user_friendlist.friend_list.append(current_user.username)
-                        b_user_friendlist.save()
-                    break
-                elif request.POST.dict()[str(i)] == "reject":
-                    friendrequestObj = FriendRequest.objects.get(requestto = current_user.username)
-                    friendrequestObj.requestfrom.remove(selected_user)
-                    friendrequestObj.save()
-                    break
-            except:
-                pass
-        return HttpResponseRedirect(reverse('commercial_user:friendrequest'))
+                        pass
+                return HttpResponseRedirect(reverse('commercial_user:friendrequest'))
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+        
 
 def showfrndlist(username1):
     try:
@@ -998,36 +1081,60 @@ class FriendView(View):
 
     def get(self, request):
         current_user = request.user
-        friends_zip, have_friend = showfrndlist(current_user)
-        friends_zip = checkPrivacySettings(friends_zip)
-        return render(request, self.template_name, {'current_user': friends_zip})
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                friends_zip, have_friend = showfrndlist(current_user)
+                friends_zip = checkPrivacySettings(friends_zip)
+                return render(request, self.template_name, {'current_user': friends_zip})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
 
     def post(self, request):
         current_user = request.user
-        username1 = current_user.username
-        current_user_friendlist, have_friend = showfrndlist(username1)
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                username1 = current_user.username
+                current_user_friendlist, have_friend = showfrndlist(username1)
 
-        for i,j in current_user_friendlist:  
-            try:
-                selected_user = i
-                
-                if request.POST.dict()[selected_user] == "Unfriend":
+                for i,j in current_user_friendlist:  
+                    try:
+                        selected_user = i
+                        
+                        if request.POST.dict()[selected_user] == "Unfriend":
 
-                    have_friend.friend_list.remove(selected_user)
-                    have_friend.save()
+                            have_friend.friend_list.remove(selected_user)
+                            have_friend.save()
 
-                    #for implementation of bi-direction remove_friend
-                    b_user_friendlist = Friend.objects.get(username = selected_user)
-                    b_user_friendlist.friend_list.remove(current_user.username)
-                    b_user_friendlist.save()
-                    break
-                elif request.POST.dict()[selected_user] == "Post on Timeline":
-                    request.session['owner'] = selected_user
-                    return redirect('commercial_user:postcontent')
-            except:
-                pass
+                            #for implementation of bi-direction remove_friend
+                            b_user_friendlist = Friend.objects.get(username = selected_user)
+                            b_user_friendlist.friend_list.remove(current_user.username)
+                            b_user_friendlist.save()
+                            break
+                        elif request.POST.dict()[selected_user] == "Post on Timeline":
+                            request.session['owner'] = selected_user
+                            return redirect('commercial_user:postcontent')
+                    except:
+                        pass
 
-        return HttpResponseRedirect(reverse('commercial_user:friend'))
+                return HttpResponseRedirect(reverse('commercial_user:friend'))
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
 
 def request_group(current_user, search_name):
     group_name_list = AddGroup.objects.filter(name__icontains = search_name)
@@ -1097,68 +1204,93 @@ class ListGroupView(View):
     
     def get(self, request):
         current_user = request.user
-        search_name = findGroup(request).lower()
-        bundle = request_group(current_user, search_name)
-        if bundle:
-            return render(request, self.template_name, {'bundle': bundle})
-        else:
-            bundle = {}
-            return render(request, self.template_name, {'bundle': bundle})
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                search_name = findGroup(request).lower()
+                bundle = request_group(current_user, search_name)
+                if bundle:
+                    return render(request, self.template_name, {'bundle': bundle})
+                else:
+                    bundle = {}
+                    return render(request, self.template_name, {'bundle': bundle})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
 
     def post(self, request):
         current_user = request.user
-        username = current_user.username
-        search_name = findGroup(request).lower()
-        bundle = request_group(current_user, search_name)
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
 
-        for keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel in bundle:
-            try:
-                
-                if request.POST.dict()[str(keyl)] == "join":
-                    print("Button pressed : ", request.POST.dict()[str(keyl)])
-                    admin = groupadminusernamel; name = groupnamel
+                username = current_user.username
+                search_name = findGroup(request).lower()
+                bundle = request_group(current_user, search_name)
 
-                    wallet = Wallet.objects.get(username=username)
-                    amount = wallet.amount; price = grouppricel
-                    
-                    if ((price <= amount and wallet.transactions_left > 0) or (price == float(0))):
-                        if price != float(0):
-                            wallet.amount -= price
-                            wallet.transactions_left -= 1
-                            wallet.save()
-                        try:
-                            group = GroupRequest.objects.get(admin = admin, name = name)
-                            group.members.append(username); group.save()
-                            #bundle update
-                            statusl = 2
-                            # return render(request, self.template_name, {'bundle': bundle})
-                            return HttpResponseRedirect(reverse('commercial_user:listgroup'))
-                        except:
-                            group = GroupRequest()
-                            group.admin = admin ; group.name = name
-                            group.status = 2
-                            group.members = [] 
-                            group.members.append(username); group.save()
-                            #bundle update
-                            statusl = 2
-                            return HttpResponseRedirect(reverse('commercial_user:listgroup'))
+                for keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel in bundle:
+                    try:
                         
-                    else:
-                        #message.info NOT WORKING (but not a problem, code working fine)
-                        messages.info(request, 'Please recharge.')
-                        # return render(request, self.template_name, {'bundle': bundle})
-                        return HttpResponseRedirect(reverse('commercial_user:listgroup'))
+                        if request.POST.dict()[str(keyl)] == "join":
+                            print("Button pressed : ", request.POST.dict()[str(keyl)])
+                            admin = groupadminusernamel; name = groupnamel
 
-                elif request.POST.dict()[str(keyl)] == "leave":
-                    admin = groupadminusernamel; name = groupnamel
-                    group = AddGroup.objects.get(admin = admin, name = name)
-                    group.members.remove(username)
-                    group.save()
-                    statusl = 1
-                    return HttpResponseRedirect(reverse('commercial_user:listgroup'))
-            except:
-                pass
-        return HttpResponseRedirect(reverse('commercial_user:listgroup'))
+                            wallet = Wallet.objects.get(username=username)
+                            amount = wallet.amount; price = grouppricel
+                            
+                            if ((price <= amount and wallet.transactions_left > 0) or (price == float(0))):
+                                if price != float(0):
+                                    wallet.amount -= price
+                                    wallet.transactions_left -= 1
+                                    wallet.save()
+                                try:
+                                    group = GroupRequest.objects.get(admin = admin, name = name)
+                                    group.members.append(username); group.save()
+                                    #bundle update
+                                    statusl = 2
+                                    # return render(request, self.template_name, {'bundle': bundle})
+                                    return HttpResponseRedirect(reverse('commercial_user:listgroup'))
+                                except:
+                                    group = GroupRequest()
+                                    group.admin = admin ; group.name = name
+                                    group.status = 2
+                                    group.members = [] 
+                                    group.members.append(username); group.save()
+                                    #bundle update
+                                    statusl = 2
+                                    return HttpResponseRedirect(reverse('commercial_user:listgroup'))
+                                
+                            else:
+                                #message.info NOT WORKING (but not a problem, code working fine)
+                                messages.info(request, 'Please recharge.')
+                                # return render(request, self.template_name, {'bundle': bundle})
+                                return HttpResponseRedirect(reverse('commercial_user:listgroup'))
+
+                        elif request.POST.dict()[str(keyl)] == "leave":
+                            admin = groupadminusernamel; name = groupnamel
+                            group = AddGroup.objects.get(admin = admin, name = name)
+                            group.members.remove(username)
+                            group.save()
+                            statusl = 1
+                            return HttpResponseRedirect(reverse('commercial_user:listgroup'))
+                    except:
+                        pass
+                return HttpResponseRedirect(reverse('commercial_user:listgroup'))
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
 
 @method_decorator(decorators, name='dispatch')
 class GroupPlanFormView(View):
@@ -1166,47 +1298,72 @@ class GroupPlanFormView(View):
     template_name = 'commercial_user/groupplan_form.html'
     
     def get(self, request):
-        form = self.form_class(None)
-        return render(request, self.template_name, {'form': form})
+        current_user = request.user
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                form = self.form_class(None)
+                return render(request, self.template_name, {'form': form})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
 
     def post(self, request):
         current_user = request.user
-        form = self.form_class(request.POST)
-        username = current_user.username
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                form = self.form_class(request.POST)
+                username = current_user.username
 
-        if form.is_valid():
-            plantype = form.cleaned_data['plantype']
-            wallet = Wallet.objects.get(username = username)
-            amount = wallet.amount
+                if form.is_valid():
+                    plantype = form.cleaned_data['plantype']
+                    wallet = Wallet.objects.get(username = username)
+                    amount = wallet.amount
 
-            price, noofgroup = priceofplan(int(plantype))
+                    price, noofgroup = priceofplan(int(plantype))
 
-            if wallet.transactions_left == 0:
-                form.add_error('plantype', "You don't have any transactions remaining for the month.")
+                    if wallet.transactions_left == 0:
+                        form.add_error('plantype', "You don't have any transactions remaining for the month.")
+                    else:
+                        if amount >= price:
+                            amount -= price
+                            wallet.transactions_left -= 1
+                            wallet.amount = amount
+                            wallet.save()
+
+                            current_date = datetime.now().date()
+                            #Assumption : If user recharge before due date of plan, then numberofgroup + = newplan.numberofgroup
+                            try:
+                                groupplan = GroupPlan.objects.get(customer = username)
+                                groupplan.recharge_on = current_date; groupplan.plantype = plantype
+                                groupplan.noofgroup += noofgroup
+                                groupplan.save()
+                            except:
+                                GroupPlan(customer = username, recharge_on = current_date, plantype = plantype, noofgroup = noofgroup).save()
+                                
+                            name = current_user.first_name + ' ' + current_user.last_name
+                            return render(request, 'commercial_user/plansuccessfullyopted.html', {'name': name})
+
+                        else:
+                            form.add_error('plantype', "You don't have sufficient balance.")
+
+                return render(request, self.template_name, {'form': form})
             else:
-                if amount >= price:
-                    amount -= price
-                    wallet.transactions_left -= 1
-                    wallet.amount = amount
-                    wallet.save()
+                return redirect('commercial_user:addmoneytosubscribe')
 
-                    current_date = datetime.now().date()
-                    #Assumption : If user recharge before due date of plan, then numberofgroup + = newplan.numberofgroup
-                    try:
-                        groupplan = GroupPlan.objects.get(customer = username)
-                        groupplan.recharge_on = current_date; groupplan.plantype = plantype
-                        groupplan.noofgroup += noofgroup
-                        groupplan.save()
-                    except:
-                        GroupPlan(customer = username, recharge_on = current_date, plantype = plantype, noofgroup = noofgroup).save()
-                        
-                    name = current_user.first_name + ' ' + current_user.last_name
-                    return render(request, 'commercial_user/plansuccessfullyopted.html', {'name': name})
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
 
-                else:
-                    form.add_error('plantype', "You don't have sufficient balance.")
-
-        return render(request, self.template_name, {'form': form})
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
 
 @method_decorator(decorators, name='dispatch')
 class AddGroupFormView(View):
@@ -1374,26 +1531,50 @@ class DeleteGroupView(View):
     
     def get(self, request):
         current_user = request.user
-        bundle = listowngroup(current_user)
-        return render(request, self.template_name, {'bundle': bundle})
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                bundle = listowngroup(current_user)
+                return render(request, self.template_name, {'bundle': bundle})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
 
     def post(self, request):
         current_user = request.user
-        bundle = listowngroup(current_user)
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                bundle = listowngroup(current_user)
 
-        for group in bundle:
-            try:
-                if request.POST.dict()[str(group)] == "Delete":
-                    groupobj = Group.objects.get(admin = current_user.username)
-                    groupobj.group_list.remove(group); groupobj.save()
-                    addgroupObj = AddGroup.objects.get(admin = current_user.username, name = group)
-                    addgroupObj.delete()
-                    break
-            except:
-                pass
+                for group in bundle:
+                    try:
+                        if request.POST.dict()[str(group)] == "Delete":
+                            groupobj = Group.objects.get(admin = current_user.username)
+                            groupobj.group_list.remove(group); groupobj.save()
+                            addgroupObj = AddGroup.objects.get(admin = current_user.username, name = group)
+                            addgroupObj.delete()
+                            break
+                    except:
+                        pass
 
-        bundle = listowngroup(current_user)
-        return render(request, self.template_name, {'bundle': bundle})
+                bundle = listowngroup(current_user)
+                return render(request, self.template_name, {'bundle': bundle})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
 
 def listjoinedgroup(current_user):
     addgroup = AddGroup.objects.all()
@@ -1428,21 +1609,47 @@ class JoinedGroupView(View):
     
     def get(self, request):
         current_user = request.user
-        bundle = listjoinedgroup(current_user)
-        return render(request, self.template_name, {'bundle': bundle})
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                bundle = listjoinedgroup(current_user)
+                return render(request, self.template_name, {'bundle': bundle})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+        
 
     def post(self, request):
         current_user = request.user
-        bundle = listjoinedgroup(current_user)
-        for key, adusername, adname, groupname, price, gmembers in bundle:
-            try:
-                if request.POST.dict()[str(key)] == "leave":
-                    group = AddGroup.objects.get(admin = adusername, name = groupname)
-                    group.members.remove(current_user.username)
-                    group.save()
-            except:
-                pass
-        return HttpResponseRedirect(reverse('commercial_user:yourjoinedgroup'))
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                bundle = listjoinedgroup(current_user)
+                for key, adusername, adname, groupname, price, gmembers in bundle:
+                    try:
+                        if request.POST.dict()[str(key)] == "leave":
+                            group = AddGroup.objects.get(admin = adusername, name = groupname)
+                            group.members.remove(current_user.username)
+                            group.save()
+                    except:
+                        pass
+                return HttpResponseRedirect(reverse('commercial_user:yourjoinedgroup'))
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+        
 
 @method_decorator(decorators, name='dispatch')
 class WalletView(View):
@@ -1541,13 +1748,13 @@ class AddMoneyFormView(View):
         form = self.form_class(request.POST)
         current_user = request.user
         casual_user = CommercialUser.objects.get(user=current_user)
-
+        print(casual_user.subscription_paid)
         if casual_user.statusofrequest == 2:
-            if casual_user.subscription_paid is True:
+            if casual_user.subscription_paid == True:
                 if form.is_valid():
                     amount = form.cleaned_data['amount']
                     username = current_user.username
-
+                    
                     # Implement OTP functionality here
 
                     email = User.objects.get(username=username).email
@@ -1636,7 +1843,7 @@ class SendMoneyFormView(View):
                             request.session['trans_type'] = 'send'
                             request.session['amount'] = str(amount)
                             request.session['send_to'] = send_to
-                            return redirect('casual_user:otpverify')
+                            return redirect('commercial_user:otpverify')
                         else:          
                             form.add_error('amount', 'OTP generation failed. Please check your network connection.')
 
@@ -1714,7 +1921,7 @@ class RequestMoneyFormView(View):
                                 request.session['trans_type'] = 'req'
                                 request.session['amount'] = str(amount)
                                 request.session['request_from'] = request_from
-                                return redirect('casual_user:otpverify')
+                                return redirect('commercial_user:otpverify')
                             else:
                                 form.add_error('amount', "You have transactions pending. Can't request at this point.")
                     else:
@@ -1737,147 +1944,194 @@ class PendingRequestsView(View):
 
     def get(self, request):
         current_user = request.user
-        pay_requests = Request.objects.filter(receiver=current_user, status=0)
-        bundle = dict()
-        bundle['requests'] = pay_requests
-        return render(request, self.template_name, {'pay_req': bundle})
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                pay_requests = Request.objects.filter(receiver=current_user, status=0)
+                bundle = dict()
+                bundle['requests'] = pay_requests
+                return render(request, self.template_name, {'pay_req': bundle})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+        
 
     def post(self, request):
         current_user = request.user
-        all_requests = Request.objects.filter(receiver=current_user, status=0)
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                all_requests = Request.objects.filter(receiver=current_user, status=0)
 
-        for req in all_requests:
-            if request.POST.dict().get(req.request_id) is not None:
-                curr_request = Request.objects.get(request_id=req.request_id)
-                if request.POST.dict()[req.request_id] == "Pay":
-                    sender_wallet = Wallet.objects.get(username=current_user)
-                    receiver_wallet = Wallet.objects.get(username=req.sender)
-                    if sender_wallet.amount >= req.amount and receiver_wallet.transactions_left > 0:
-                        sender_wallet.amount -= req.amount
-                        receiver_wallet.amount += req.amount
-                        receiver_wallet.transactions_left -= 1
-                        sender_wallet.save()
-                        receiver_wallet.save()
-                        curr_request.status = 1
-                        curr_request.save()
-                        Transaction(sender=current_user, receiver=req.sender, amount=req.amount, timestamp=timezone.now()).save()
-                    else:
-                        # If requested amount is greater than current balance, the request is dropped.
-                        curr_request.status = 2
-                        curr_request.save()
-                elif request.POST.dict()[req.request_id] == "Decline":
-                    curr_request.status = 2
-                    curr_request.save()
+                for req in all_requests:
+                    if request.POST.dict().get(req.request_id) is not None:
+                        curr_request = Request.objects.get(request_id=req.request_id)
+                        if request.POST.dict()[req.request_id] == "Pay":
+                            sender_wallet = Wallet.objects.get(username=current_user)
+                            receiver_wallet = Wallet.objects.get(username=req.sender)
+                            if sender_wallet.amount >= req.amount and receiver_wallet.transactions_left > 0:
+                                sender_wallet.amount -= req.amount
+                                receiver_wallet.amount += req.amount
+                                receiver_wallet.transactions_left -= 1
+                                sender_wallet.save()
+                                receiver_wallet.save()
+                                curr_request.status = 1
+                                curr_request.save()
+                                Transaction(sender=current_user, receiver=req.sender, amount=req.amount, timestamp=timezone.now()).save()
+                            else:
+                                # If requested amount is greater than current balance, the request is dropped.
+                                curr_request.status = 2
+                                curr_request.save()
+                        elif request.POST.dict()[req.request_id] == "Decline":
+                            curr_request.status = 2
+                            curr_request.save()
 
-        return HttpResponseRedirect(reverse('commercial_user:pendingrequests'))
+                return HttpResponseRedirect(reverse('commercial_user:pendingrequests'))
 
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+        
 @method_decorator(decorators, name='dispatch')
-class OTPVerificationFormView(View):
+class OTPVerificationFormsView(View):
     form_class = OTPVerificationForm
     template_name = 'commercial_user/otpverify.html'
 
     def get(self, request):
-        form = self.form_class(None)
-        return render(request, self.template_name, {'form': form})
+        current_user = request.user
+        commercial_user = CommercialUser.objects.get(user=current_user)
+        if commercial_user.statusofrequest == 2:
+            if commercial_user.subscription_paid == True:
+                form = self.form_class(None)
+                return render(request, self.template_name, {'form': form})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+        elif commercial_user.statusofrequest == 3:
+            return redirect('commercial_user:denied')
+        else:
+            return redirect('commercial_user:verifypan')
+
 
     def post(self, request):
         current_user = request.user
 
         form = self.form_class(request.POST)
+        current_user = request.user
+        commercial_user = CommercialUser.objects.get(user=current_user)
+        if commercial_user.statusofrequest == 2:
+            if commercial_user.subscription_paid == True:
+            
+                if form.is_valid():
+                    otp = form.cleaned_data['otp']
 
-        if form.is_valid():
-            otp = form.cleaned_data['otp']
+                    if request.session['otp'] != otp:
+                        form.add_error('otp', 'Wrong OTP entered!')
+                    elif time.time() > float(request.session['timer']) + 180:
+                        form.add_error('otp', 'Timer expired!')
+                    else: 
+                        request.session.pop('otp', None)
+                        request.session.pop('timer', None)
+                        request.session.modified = True
 
-            if request.session['otp'] != otp:
-                form.add_error('otp', 'Wrong OTP entered!')
-            elif time.time() > float(request.session['timer']) + 180:
-                form.add_error('otp', 'Timer expired!')
-            else: 
-                request.session.pop('otp', None)
-                request.session.pop('timer', None)
-                request.session.modified = True
+                        if request.session['trans_type'] == 'add':
+                            request.session.pop('trans_type', None)
+                            request.session.modified = True
+                            username = current_user.username
+                            wallet = Wallet.objects.get(username=username)
+                            wallet.amount += float(request.session['amount'])
+                            wallet.transactions_left -= 1
+                            wallet.save()
 
-                if request.session['trans_type'] == 'add':
-                    request.session.pop('trans_type', None)
-                    request.session.modified = True
-                    username = current_user.username
-                    wallet = Wallet.objects.get(username=username)
-                    wallet.amount += float(request.session['amount'])
-                    wallet.transactions_left -= 1
-                    wallet.save()
+                            # Add to Transactions table
+                            Transaction(sender=username, receiver=username, amount=float(request.session['amount']), timestamp=timezone.now()).save()
 
-                    # Add to Transactions table
-                    Transaction(sender=username, receiver=username, amount=float(request.session['amount']), timestamp=timezone.now(tz=None)).save()
+                            request.session.pop('amount', None)
+                            request.session.modified = True
 
-                    request.session.pop('amount', None)
-                    request.session.modified = True
+                            w_dict = dict() 
 
-                    w_dict = dict() 
+                            w_dict['Account Type'] = wallet.user_type
+                            w_dict['Amount'] = wallet.amount
+                            w_dict['Remaining Transactions'] = wallet.transactions_left
 
-                    w_dict['Account Type'] = wallet.user_type
-                    w_dict['Amount'] = wallet.amount
-                    w_dict['Remaining Transactions'] = wallet.transactions_left
+                            return render(request, 'commercial_user/mywallet.html', {'wallet': w_dict})
 
-                    return render(request, 'commercial_user/mywallet.html', {'wallet': w_dict})
+                        elif request.session['trans_type'] == 'send':
+                            request.session.pop('trans_type', None)
+                            request.session.modified = True
 
-                elif request.session['trans_type'] == 'send':
-                    request.session.pop('trans_type', None)
-                    request.session.modified = True
+                            sender_wallet = Wallet.objects.get(username=current_user)
+                            receiver_wallet = Wallet.objects.get(username=request.session['send_to'])
 
-                    sender_wallet = Wallet.objects.get(username=current_user)
-                    receiver_wallet = Wallet.objects.get(username=request.session['send_to'])
+                            sender_wallet.amount -= float(request.session['amount'])
+                            sender_wallet.transactions_left -= 1    # Assumption: Sending money causes one transaction of the sender to be exhausted.
+                            receiver_wallet.amount += float(request.session['amount'])
+                            sender_wallet.save()
+                            receiver_wallet.save()
 
-                    sender_wallet.amount -= float(request.session['amount'])
-                    sender_wallet.transactions_left -= 1    # Assumption: Sending money causes one transaction of the sender to be exhausted.
-                    receiver_wallet.amount += float(request.session['amount'])
-                    sender_wallet.save()
-                    receiver_wallet.save()
+                            # Add to Transactions table
+                            Transaction(sender=current_user, receiver=request.session['send_to'], amount=float(request.session['amount']), timestamp=timezone.now()).save()
 
-                    # Add to Transactions table
-                    Transaction(sender=current_user, receiver=request.session['send_to'], amount=float(request.session['amount']), timestamp=timezone.now()).save()
+                            request.session.pop('amount', None)
+                            request.session.pop('send_to', None)
+                            request.session.modified = True
 
-                    request.session.pop('amount', None)
-                    request.session.pop('send_to', None)
-                    request.session.modified = True
+                            w_dict = dict() 
 
-                    w_dict = dict() 
+                            w_dict['Account Type'] = sender_wallet.user_type
+                            w_dict['Amount'] = sender_wallet.amount
+                            w_dict['Remaining Transactions'] = sender_wallet.transactions_left
 
-                    w_dict['Account Type'] = sender_wallet.user_type
-                    w_dict['Amount'] = sender_wallet.amount
-                    w_dict['Remaining Transactions'] = sender_wallet.transactions_left
+                            return render(request, 'commercial_user/mywallet.html', {'wallet': w_dict})
 
-                    return render(request, 'commercial_user/mywallet.html', {'wallet': w_dict})
+                        elif request.session['trans_type'] == 'req':
+                            request.session.pop('trans_type', None)
+                            request.session.modified = True
 
-                elif request.session['trans_type'] == 'req':
-                    request.session.pop('trans_type', None)
-                    request.session.modified = True
+                            sender = Wallet.objects.get(username=current_user)
 
-                    sender = Wallet.objects.get(username=current_user)
+                            # Add entry to Request table
+                            req_count = len(Request.objects.all())
+                            req_id = "RQST-" + str(req_count + 1)
+                            Request(request_id=req_id, sender=current_user, receiver=request.session['request_from'], amount=float(request.session['amount']), status=0).save()
 
-                    # Add entry to Request table
-                    req_count = len(Request.objects.all())
-                    req_id = "RQST-" + str(req_count + 1)
-                    Request(request_id=req_id, sender=current_user, receiver=request.session['request_from'], amount=float(request.session['amount']), status=0).save()
+                            request.session.pop('amount', None)
+                            request.session.pop('request_from', None)
+                            request.session.modified = True
 
-                    request.session.pop('amount', None)
-                    request.session.pop('request_from', None)
-                    request.session.modified = True
+                            # Assumption: If the request is accepted, then no. of transactions is deducted by one.
 
-                    # Assumption: If the request is accepted, then no. of transactions is deducted by one.
+                            w_dict = dict()
 
-                    w_dict = dict()
+                            w_dict['Account Type'] = sender.user_type
+                            w_dict['Amount'] = sender.amount
+                            w_dict['Remaining Transactions'] = sender.transactions_left
 
-                    w_dict['Account Type'] = sender.user_type
-                    w_dict['Amount'] = sender.amount
-                    w_dict['Remaining Transactions'] = sender.transactions_left
+                            return render(request, 'commercial_user/mywallet.html', {'wallet': w_dict})
 
-                    return render(request, 'commercial_user/mywallet.html', {'wallet': w_dict})
+                        else:
+                            form.add_error('otp', 'Unknown transaction!')
+                        
 
-                else:
-                    form.add_error('otp', 'Unknown transaction!')
-                
-
-        return render(request, self.template_name, {'form': form})
+                return render(request, self.template_name, {'form': form})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+        elif commercial_user.statusofrequest == 3:
+            return redirect('commercial_user:denied')
+        else:
+            return redirect('commercial_user:verifypan')
 
 def getfriendlist(username1):
     try:
@@ -1897,37 +2151,63 @@ class InboxView(View):
 
     def get(self, request):
         current_user = request.user
-        username1 = current_user.username
-        friendlist = getfriendlist(username1)
-        current_user = dict()
-            
-        userinfo=dict()
-        if friendlist:
-            uname = []
-            for i in friendlist:
-                userObj = User.objects.get(username = i)
-                name = str(userObj.first_name) + ' ' + str(userObj.last_name)
-                uname.append(name)
-            info = zip(friendlist, uname)
-            userinfo[username1] = info
-        else:
-            userinfo = dict()
-        return render(request, self.template_name, {'userinfo': userinfo})
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                username1 = current_user.username
+                friendlist = getfriendlist(username1)
+                current_user = dict()
+                    
+                userinfo=dict()
+                if friendlist:
+                    uname = []
+                    for i in friendlist:
+                        userObj = User.objects.get(username = i)
+                        name = str(userObj.first_name) + ' ' + str(userObj.last_name)
+                        uname.append(name)
+                    info = zip(friendlist, uname)
+                    userinfo[username1] = info
+                else:
+                    userinfo = dict()
+                return render(request, self.template_name, {'userinfo': userinfo})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+        
 
     def post(self, request):
         current_user = request.user
-        username1 = current_user.username
-        friendlist = getfriendlist(username1)
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                username1 = current_user.username
+                friendlist = getfriendlist(username1)
+                
+                for i in friendlist:
+                    try:
+                        selected_user = i
+                        if request.POST.dict()[selected_user] == "Send Message":
+                            usernameObj.username = ""
+                            usernameObj.username = selected_user
+                    except:
+                        pass
+                return redirect('commercial_user:chat')
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
         
-        for i in friendlist:
-            try:
-                selected_user = i
-                if request.POST.dict()[selected_user] == "Send Message":
-                    usernameObj.username = ""
-                    usernameObj.username = selected_user
-            except:
-                pass
-        return redirect('commercial_user:chat')
 
 def saveMessage(self, request, sender, receiver):
     search_msg = request.POST.dict()['messagearea']
@@ -1977,45 +2257,113 @@ class ChatView(View):
 
     def get(self, request):
         current_user = request.user
-        sender = current_user.username
-        receiver = usernameObj.username
-        updatemessages = showmessages(sender, receiver)
-        msg = {'updatemessages':updatemessages}
-        return render(request, self.template_name, {'msg': msg})
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                sender = current_user.username
+                receiver = usernameObj.username
+                updatemessages = showmessages(sender, receiver)
+                msg = {'updatemessages':updatemessages}
+                return render(request, self.template_name, {'msg': msg})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+        
 
     def post(self, request):
 
         current_user = request.user
-        sender = current_user.username
-        receiver = usernameObj.username
-        saveMessage(self, request, sender, receiver)
-        return HttpResponseRedirect(reverse('commercial_user:chat'))
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                sender = current_user.username
+                receiver = usernameObj.username
+                saveMessage(self, request, sender, receiver)
+                return HttpResponseRedirect(reverse('commercial_user:chat'))
 
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+        
 @method_decorator(decorators, name='dispatch')
 class PostContentView(View):
     template_name = 'commercial_user/postcontent.html'
 
     def get(self, request):
-        owner = request.session.get('owner')
-        owner = User.objects.get(username=owner).first_name + " " + User.objects.get(username=owner).last_name
-        visitor = request.user
-        visitor = User.objects.get(username=visitor).first_name + " " + User.objects.get(username=visitor).last_name
-        return render(request, self.template_name, {'owner':owner, 'visitor':visitor})
+        current_user = request.user
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                owner = request.session.get('owner')
+                owner = User.objects.get(username=owner).first_name + " " + User.objects.get(username=owner).last_name
+                visitor = request.user
+                visitor = User.objects.get(username=visitor).first_name + " " + User.objects.get(username=visitor).last_name
+                return render(request, self.template_name, {'owner':owner, 'visitor':visitor})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+        
 
     def post(self, request):
-        owner = request.session.get('owner')
-        visitor = request.user
-        savePost(request, owner, visitor)
-        request.session.pop('trans_type', None)
-        request.session.modified = True
-        return redirect('commercial_user:friend')
+        current_user = request.user
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                owner = request.session.get('owner')
+                visitor = request.user
+                savePost(request, owner, visitor)
+                request.session.pop('trans_type', None)
+                request.session.modified = True
+                return redirect('commercial_user:friend')
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+        
 
 @method_decorator(decorators, name='dispatch')
 class NofriendsView(View):
     template_name = 'commercial_user/nofriends.html'
 
     def get(self, request):
-        return render(request, self.template_name)
+        current_user = request.user
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                return render(request, self.template_name)
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
+
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+        
 
 @method_decorator(decorators, name='dispatch')
 class SettingsView(View):
@@ -2026,26 +2374,53 @@ class SettingsView(View):
         if str(current_user) is 'AnonymousUser':
             raise Http404
         else:
-            level = Timeline.objects.get(username=current_user).level
-            if level:
-                level = "Friends"
-            else:
-                level = "Only Me"
-            return render(request, self.template_name, {'level': level})
+            current_user = request.user
+            c_user = CommercialUser.objects.get(user=current_user)
+            if c_user.statusofrequest == 2:
+                if c_user.subscription_paid == True:
+                    level = Timeline.objects.get(username=current_user).level
+                    if level:
+                        level = "Friends"
+                    else:
+                        level = "Only Me"
+                    return render(request, self.template_name, {'level': level})
+                else:
+                    return redirect('commercial_user:addmoneytosubscribe')
+
+            elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+                #up for premium or casual user, and redirect to register page 
+                return redirect('commercial_user:denied')
+
+            else: #pending, not validated yet
+                return redirect('commercial_user:verifypan')
+            
 
     def post(self, request):
         current_user = request.user
-        scope = request.POST.dict()['level']
-        user_timeline = Timeline.objects.get(username=str(current_user))
+        c_user = CommercialUser.objects.get(user=current_user)
+        if c_user.statusofrequest == 2:
+            if c_user.subscription_paid == True:
+                scope = request.POST.dict()['level']
+                user_timeline = Timeline.objects.get(username=str(current_user))
 
-        if scope == "0":
-            user_timeline.level = 0
-        elif scope == "1":
-            user_timeline.level = 1
+                if scope == "0":
+                    user_timeline.level = 0
+                elif scope == "1":
+                    user_timeline.level = 1
+                
+                user_timeline.save()
+                return HttpResponseRedirect(reverse('commercial_user:settings'))
         
-        user_timeline.save()
-        return HttpResponseRedirect(reverse('commercial_user:settings'))
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
 
+        elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
+            #up for premium or casual user, and redirect to register page 
+            return redirect('commercial_user:denied')
+
+        else: #pending, not validated yet
+            return redirect('commercial_user:verifypan')
+        
 @method_decorator(decorators, name='dispatch')
 class LogoutView(View):
     template_name = 'login/login.html'

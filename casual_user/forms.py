@@ -60,3 +60,11 @@ class OTPVerificationForm(forms.Form):
 
     class Meta:
         fields = ['otp']
+
+class SubscriptionForm(forms.Form):
+    subscription_plan = forms.ChoiceField(choices=[(1, 'Silver: Rs 50/month'), (2, 'Gold: Rs 100/month'), (3, 'Platinum: Rs 150/month')], widget = forms.RadioSelect)
+    amount = forms.FloatField(min_value=50)
+
+    class Meta:
+        # model
+        fields = ['subscription_plan', 'amount']
