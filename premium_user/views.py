@@ -1259,17 +1259,17 @@ class OTPVerificationFormView(View):
                     try:
                         plan = request.session['plan']
                         if  plan == "1":
-                            amount = request.session['sub_amount']
+                            amount = float(request.session['sub_amount'])
                             amount = amount - 50
                             # Add no. of groups the user can create here
                             flag = True
                         elif plan == "2":
-                            amount = request.session['sub_amount']
+                            amount = float(request.session['sub_amount'])
                             amount = amount - 100
                             # Add no. of groups the user can create here
                             flag = True
                         elif plan == "3":
-                            amount = request.session['sub_amount']
+                            amount = float(request.session['sub_amount'])
                             amount = amount - 150
                             # Add no. of groups the user can create here
                             flag = True
@@ -1587,7 +1587,7 @@ class SubscriptionFormView(View):
                 c = sendOTP(request, email, subject)
 
                 if c == 1:
-                    request.session['sub_amount'] = amount
+                    request.session['sub_amount'] = str(amount)
                     request.session['plan'] = plan
                     return HttpResponseRedirect(reverse('premium_user:otpverify'))
                 else:
@@ -1601,5 +1601,5 @@ class LogoutView(View):
     template_name = 'login/login.html'
     def get(self, request):
         logout(request)
-        return HttpResponseRedirect(reverse('applogin:login'))
+        return HttpResponseRedirect(reverse('login:login'))
 

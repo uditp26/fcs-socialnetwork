@@ -2426,4 +2426,4 @@ class LogoutView(View):
     template_name = 'login/login.html'
     def get(self, request):
         logout(request)
-        return HttpResponseRedirect(reverse('applogin:login'))
+        return HttpResponseRedirect(reverse('login:login'))
