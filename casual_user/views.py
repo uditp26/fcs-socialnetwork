@@ -423,11 +423,13 @@ def showfrndlist(username1):
         current_user_friendlist  = list(have_friend.friend_list)
         
         name_of_friendlist = []
-        for i in current_user_friendlist:
-            user = User.objects.get(username = i)
-            name = str(user.first_name) + ' ' + str(user.last_name)
-            name_of_friendlist.append(name)
-
+        if current_user_friendlist:
+            for i in current_user_friendlist:
+                user = User.objects.get(username = i)
+                name = str(user.first_name) + ' ' + str(user.last_name)
+                name_of_friendlist.append(name)
+        else:
+            current_user_friendlist = []
     except:
         have_friend =  Friend()
         current_user_friendlist = []
@@ -444,12 +446,16 @@ def checkPrivacySettings(friends_zip):
     level_list = []
     uname_list = []
     name_list = []
-    for username, name in friends_zip:
-        uname_list.append(username)
-        name_list.append(name)
-        level_list.append(str(Timeline.objects.get(username=username).level))
+    if friends_zip:
+        for username, name in friends_zip:
+            uname_list.append(username)
+            name_list.append(name)
+            level_list.append(str(Timeline.objects.get(username=username).level))
 
-    return zip(uname_list, name_list, level_list)
+        return zip(uname_list, name_list, level_list)
+    else:
+        friends_zip = []
+        return friends_zip
 
 #for display friendlist
 @method_decorator(decorators, name='dispatch')
@@ -459,6 +465,7 @@ class FriendView(View):
     def get(self, request):
         current_user = request.user
         friends_zip, have_friend = showfrndlist(current_user)
+        
         friends_zip = checkPrivacySettings(friends_zip)
         return render(request, self.template_name, {'current_user': friends_zip})
 
@@ -961,7 +968,7 @@ class OTPVerificationFormView(View):
                     wallet.save()
 
                     # Add to Transactions table
-                    Transaction(sender=username, receiver=username, amount=float(request.session['amount']), timestamp=timezone.now(tz=None)).save()
+                    Transaction(sender=username, receiver=username, amount=float(request.session['amount']), timestamp=timezone.now()).save()
 
                     request.session.pop('amount', None)
                     request.session.modified = True

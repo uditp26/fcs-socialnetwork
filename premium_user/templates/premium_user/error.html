@@ -13,10 +13,10 @@
 		<div class="col-lg-offset-2 col-sm-10" style="padding: 20px">
 			{% for key, value in bundle.items %}
                 {% if key %}
-                    <h4>{{ value }} your plan expired or you exceed the number of group's formed limit.</h4> 
+                    <h4>{{ value }} You exceed the number of group's formed limit.</h4> 
                     <h4> Click here <a href="{% url 'premium_user:groupplan' %}">to select your plan.</a></h4>
                 {% else %}
-                    <h4>{{ value }} you have not selected any plan yet.</h4> 
+                    <h4>{{ value }} You have not selected any plan yet.</h4> 
                     <h4> Click here <a href="{% url 'premium_user:groupplan' %}">to select your plan.</a></h4>
                 {% endif %}
             {% endfor %}

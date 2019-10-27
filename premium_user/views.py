@@ -28,7 +28,34 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import cache_control
 
+#! pip install cryptograhy
+#! pip install pycrypto
+#! pip install pycryptodome
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+
+# from Crypto.PublicKey import RSA
+# from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
+
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='http://127.0.0.1:8000/login/')]
+
+def decryptcipher(cipher, username):
+    encObj = Encryption.objects.get(user= username)
+    prvkey = encObj.privatekey
+    prvkey = prvkey.replace("\\\\n","\n")
+
+    ciphertext_new = cipher.encode('utf-8')
+    ciphertext_new = ciphertext_new.decode('unicode-escape').encode('ISO-8859-1')
+
+    keyPriv = RSA.importKey(prvkey)
+    cipher = Cipher_PKCS1_v1_5.new(keyPriv)
+
+    decrypt_text = cipher.decrypt(ciphertext_new, None).decode()
+    print("decrypted msg->", decrypt_text)
+    return decrypt_text
 
 def priceofplan(plantype):
     if plantype == 1:
@@ -54,6 +81,8 @@ def get_user_info(current_user):
 def savePost(request, current_user, visitor=""):
 
     post = request.POST.dict()['postarea']
+    # call below function to decrypt(after package install)
+    # post =  decryptcipher(current_user, post) 
     scope = request.POST.dict()['level']
 
     if visitor != "":
@@ -160,13 +189,14 @@ class HomepageView(View):
         bundle = genBundle(current_user)
         return HttpResponseRedirect(reverse('premium_user:homepage'))
 
+#___________________________________________________group_________________________________________
 #pass to groupdetails.html
 def getgroupdetails(current_user):
     bundle = {}
     try:
         groups = AddGroup.objects.filter(admin = current_user.username)
         groupplan = GroupPlan.objects.get(customer = current_user.username)
-        print("YES")
+
         groupinfo = {}
         key = 1; anotherkey  = 11
         for group in groups:
@@ -753,14 +783,33 @@ class AddGroupFormView(View):
         try:
             groupplanofuser = GroupPlan.objects.get(customer = username)
             noofgroup = groupplanofuser.noofgroup
+            
             # Recharge validity check
             current_date = datetime.now().date()
             rechargedate = groupplanofuser.recharge_on.now().date()
             days = int((rechargedate - current_date).days)
-            if noofgroup > 0 and days <= 30:
+            if days > 30:
+                status = groupplanofuser.plantype
+                if status == "1":
+                    groupplanofuser.noofgroup = 2
+                    groupplanofuser.recharge_on = current_date 
+                    groupplanofuser.save()
+                elif status == "2":
+                    groupplanofuser.noofgroup = 4
+                    groupplanofuser.recharge_on = current_date
+                    groupplanofuser.save()
+                elif status == "3":
+                    groupplanofuser.noofgroup = sys.maxsize
+                    groupplanofuser.recharge_on = current_date
+                    groupplanofuser.save()
+                form = self.form_class(None)
+                return render(request, self.template_name, {'form': form})
+
+            if noofgroup > 0:
                 #blank form added
                 form = self.form_class(None)
                 return render(request, self.template_name, {'form': form})
+
             else:
                 name = current_user.first_name + ' ' + current_user.last_name
                 bundle = dict(); errortype = 1
@@ -920,6 +969,11 @@ class DeleteGroupView(View):
                     groupobj.group_list.remove(group); groupobj.save()
                     addgroupObj = AddGroup.objects.get(admin = current_user.username, name = group)
                     addgroupObj.delete()
+                    
+                    groupplan = GroupPlan.objects.get(customer = username)
+                    groupplan.noofgroup += 1
+                    groupplan.save()
+
                     break
             except:
                 pass
@@ -1261,16 +1315,34 @@ class OTPVerificationFormView(View):
                         if  plan == "1":
                             amount = request.session['sub_amount']
                             amount = amount - 50
+                            
+                            groupplan = GroupPlan.objects.get(customer = current_user.username)
+                            groupplan.recharge_on = current_date; groupplan.plantype = plan
+                            groupplan.noofgroup = 2
+                            groupplan.save()
+
                             # Add no. of groups the user can create here
                             flag = True
                         elif plan == "2":
                             amount = request.session['sub_amount']
                             amount = amount - 100
+
+                            groupplan = GroupPlan.objects.get(customer = current_user.username)
+                            groupplan.recharge_on = current_date; groupplan.plantype = plan
+                            groupplan.noofgroup = 4
+                            groupplan.save()
+
                             # Add no. of groups the user can create here
                             flag = True
                         elif plan == "3":
                             amount = request.session['sub_amount']
                             amount = amount - 150
+
+                            groupplan = GroupPlan.objects.get(customer = current_user.username)
+                            groupplan.recharge_on = current_date; groupplan.plantype = plan
+                            groupplan.noofgroup = sys.maxsize
+                            groupplan.save()
+
                             # Add no. of groups the user can create here
                             flag = True
                         else:
@@ -1385,7 +1457,8 @@ def getfriendlist(username1):
 
 def saveMessage(self, request, sender, receiver):
     search_msg = request.POST.dict()['messagearea']
-
+    # call below function to decrypt(after package install)
+    # search_msg = decryptcipher(sender, search_msg) 
     if search_msg:
         getmessage = search_msg
         search_msg = ""

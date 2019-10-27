@@ -32,6 +32,18 @@ from django.views.decorators.cache import cache_control
 
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='http://127.0.0.1:8000/login/')]
 
+def priceofplan(plantype):
+    if plantype == 1:
+        price = 50
+        noofgroup = 2
+    elif plantype == 2:
+        price = 100
+        noofgroup = 4
+    else:
+        price = 150
+        noofgroup = sys.maxsize     
+    return price, noofgroup
+
 def get_user_info(current_user):
     if current_user.user_type == 1:
         login_user = CasualUser.objects.get(user=current_user)
@@ -42,7 +54,9 @@ def get_user_info(current_user):
     return login_user
 
 def savePost(request, current_user, visitor=""):
+    print("Previous")
     post = request.POST.dict()['postarea']
+    print("NEXT")
     scope = request.POST.dict()['level']
 
     if visitor != "":
@@ -59,8 +73,8 @@ def savePost(request, current_user, visitor=""):
         elif scope == "1":
             user_posts[0].public_posts.append(post)
             user_posts[0].pblc_timestamp.append(timestamp)
-
         user_posts[0].save()
+        
     else:
         if scope == "0":
             new_post = Post(username=str(current_user), friends_posts = [post], public_posts = [], frnd_timestamp = [timestamp], pblc_timestamp = [])
@@ -1029,6 +1043,8 @@ class FriendView(View):
 
         return HttpResponseRedirect(reverse('commercial_user:friend'))
 
+#____________________________________________ GROUP ____________________________________
+
 def request_group(current_user, search_name):
     group_name_list = AddGroup.objects.filter(name__icontains = search_name)
     group_name_list = group_name_list.exclude(admin = current_user.username)
@@ -1220,7 +1236,47 @@ class AddGroupFormView(View):
         casual_user = CommercialUser.objects.get(user=current_user)
         if casual_user.statusofrequest == 2:
             if casual_user.subscription_paid == True:
-                return render(request, self.template_name, {'form': form})
+                try:
+                    groupplanofuser = GroupPlan.objects.get(customer = username)
+                    noofgroup = groupplanofuser.noofgroup
+                    
+                    # Recharge validity check
+                    current_date = datetime.now().date()
+                    rechargedate = groupplanofuser.recharge_on.now().date()
+                    days = int((rechargedate - current_date).days)
+                    if days > 30:
+                        status = groupplanofuser.plantype
+                        if status == "1":
+                            groupplanofuser.noofgroup = 2
+                            groupplanofuser.recharge_on = current_date 
+                            groupplanofuser.save()
+                        elif status == "2":
+                            groupplanofuser.noofgroup = 4
+                            groupplanofuser.recharge_on = current_date
+                            groupplanofuser.save()
+                        elif status == "3":
+                            groupplanofuser.noofgroup = sys.maxsize
+                            groupplanofuser.recharge_on = current_date
+                            groupplanofuser.save()
+                        form = self.form_class(None)
+                        return render(request, self.template_name, {'form': form})
+
+                    if noofgroup > 0:
+                        #blank form added
+                        form = self.form_class(None)
+                        return render(request, self.template_name, {'form': form})
+                        
+                    else:
+                        name = current_user.first_name + ' ' + current_user.last_name
+                        bundle = dict(); errortype = 1
+                        bundle[errortype] = name
+                        return render(request, 'commercial_user/error.html', {'bundle': bundle})
+
+                except:
+                    name = current_user.first_name + ' ' + current_user.last_name
+                    bundle = dict(); errortype = 0
+                    bundle[errortype] = name
+                    return render(request, 'commercial_user/error.html', {'bundle': bundle})
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
@@ -1388,6 +1444,10 @@ class DeleteGroupView(View):
                     groupobj.group_list.remove(group); groupobj.save()
                     addgroupObj = AddGroup.objects.get(admin = current_user.username, name = group)
                     addgroupObj.delete()
+
+                    groupplan = GroupPlan.objects.get(customer = username)
+                    groupplan.noofgroup += 1
+                    groupplan.save()
                     break
             except:
                 pass
@@ -1879,13 +1939,15 @@ class OTPVerificationFormView(View):
 
         return render(request, self.template_name, {'form': form})
 
-def getfriendlist(username1):
+def getalluserlist(username1):
     try:
-        have_friend = Friend.objects.get(username = username1)
-        friendlist  = list(have_friend.friend_list)
+        allusername = []
+        all_user = User.objects.all()
+        for i in all_user:
+            allusername.append(i.username)
     except:
-        friendlist = []
-    return friendlist
+        allusername = []
+    return allusername
 
 class Saveuser:
     username = ""
@@ -1898,7 +1960,7 @@ class InboxView(View):
     def get(self, request):
         current_user = request.user
         username1 = current_user.username
-        friendlist = getfriendlist(username1)
+        friendlist = getalluserlist(username1)
         current_user = dict()
             
         userinfo=dict()
@@ -1917,7 +1979,7 @@ class InboxView(View):
     def post(self, request):
         current_user = request.user
         username1 = current_user.username
-        friendlist = getfriendlist(username1)
+        friendlist = getalluserlist(username1)
         
         for i in friendlist:
             try:
