@@ -75,7 +75,7 @@ def getpubpvtkey(username):
     publicKey = publicKey.split("'")[1][:-3]
     Encryption(user = username, privatekey = privateKey, publickey = publicKey).save()
     
-
+    return publicKey
 
 UserModel = get_user_model()
 
@@ -208,25 +208,28 @@ class RegistrationFormView(View):
             Timeline(username=username, level=1).save()
             Friend(username=username, friend_list=[]).save()
             FriendRequest(requestto = username, requestfrom =[]).save()
-            getpubpvtkey(username)
+            pubkey = getpubpvtkey(username)
 
+            keyanduser = dict()
+            keyanduser[username] = pubkey
             if account_type == '1':
                 CasualUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
                 Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=15).save()
-                return render(request, 'login/registrationsuccess.html', {'username': username})
+                return render(request, 'login/registrationsuccess.html', {'keyanduser': keyanduser})
 
             elif account_type == '2':
                 PremiumUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email, subscription=0).save()
                 Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=30).save()
                 Group(admin = username, group_list = []).save()
-                return render(request, 'login/registrationsuccess.html', {'username': username})  
+                
+                return render(request, 'login/registrationsuccess.html', {'keyanduser': keyanduser})  
 
             else:
                 CommercialUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
                 Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=10000).save()
                 Pages(username=username, title=[], description=[], page_link=[]).save()
                 Group(admin = username, group_list = []).save()
-                return render(request, 'login/registrationsuccess.html', {'username': username})
+                return render(request, 'login/registrationsuccess.html', {'keyanduser': keyanduser})
 
         return render(request, self.template_name, {'form': form})
 

@@ -14,7 +14,8 @@
 			{% for key, value in bundle.items %}
                 {% if key %}
                     <h4>{{ value }} You exceed the number of group's formed limit.</h4> 
-                    <h4> Click here <a href="{% url 'premium_user:groupplan' %}">to select your plan.</a></h4>
+                    <h4>{{ value }} If you still want to create group have to delete some existing group.</h4>
+                    <h4> Click here <a href="{% url 'premium_user:deletegroup' %}">to delete your group.</a></h4>
                 {% else %}
                     <h4>{{ value }} You have not selected any plan yet.</h4> 
                     <h4> Click here <a href="{% url 'premium_user:groupplan' %}">to select your plan.</a></h4>
