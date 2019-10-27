@@ -38,5 +38,5 @@ urlpatterns = [
     url(r'settings/$', views.SettingsView.as_view(), name="settings"),
 
     url(r'upgrade/$', views.ViewUpgradePageView.as_view(), name="upgrade"),
-    
+    url(r'subscription/$', views.SubscriptionFormView.as_view(), name="subscription"),
 ]

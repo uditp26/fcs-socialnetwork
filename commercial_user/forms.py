@@ -83,13 +83,10 @@ class EditProfileForm(forms.Form):
     first_name = forms.CharField(max_length=50)
     last_name = forms.CharField(max_length=50)
     date_of_birth = forms.DateTimeField(widget=forms.TextInput(attrs={'class':'datetime-input'}))
-    gender = forms.ChoiceField(choices=[(1, 'Male'), (2, 'Female'), (3, 'Transgender')],
-    widget = forms.RadioSelect)
-    phone = PhoneNumberField(widget=forms.TextInput(), required=False)
+    phone = PhoneNumberField(widget=forms.TextInput())
     
     class Meta:
-        # model = User
-        fields = [ 'first_name', 'last_name', 'date_of_birth', 'gender', 'phone' ]
+        fields = [ 'first_name', 'last_name', 'date_of_birth', 'phone' ]
 
 class RequestMoneyForm(forms.Form):
     amount = forms.DecimalField(decimal_places=2, min_value=0)
