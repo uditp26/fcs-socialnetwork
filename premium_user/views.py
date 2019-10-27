@@ -85,7 +85,8 @@ def savePost(request, current_user, visitor=""):
     try:
         post =  decryptcipher(current_user, post) 
     except:
-        form.add_error('postarea', 'You cipher is encrypted with wrong key.')
+        print("ERROR IN PKI")
+        pass
     scope = request.POST.dict()['level']
 
     if visitor != "":
@@ -1444,7 +1445,8 @@ def saveMessage(self, request, sender, receiver):
     try:
         search_msg =  decryptcipher(current_user, search_msg) 
     except:
-        form.add_error('messagearea', 'You cipher is encrypted with wrong key.')
+        Print("ERROR IN PKI")
+        pass
 
     if search_msg:
         getmessage = search_msg
