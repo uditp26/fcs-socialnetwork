@@ -279,9 +279,6 @@ class UserProfileView(View):
         user = User.objects.get(username=username)
         fname = user.first_name
         lname = user.last_name
-
-        if PremiumUser.objects.get(user=current_user).subscription == 0:
-            return HttpResponseRedirect(reverse('premium_user:subscription'))
         
         if user.user_type == 1:         # casual-user
             casual_user = CasualUser.objects.get(user=user)

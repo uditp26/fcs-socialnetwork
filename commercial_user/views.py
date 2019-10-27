@@ -406,8 +406,8 @@ class AddMoneyFormToSubscribeView(View):
                 
         
 @method_decorator(decorators, name='dispatch')
-class MainHomepageView(View):
-    template_name = 'commercial_user/mainhomepage.html'
+class HomepageView(View):
+    template_name = 'commercial_user/homepage.html'
 
     def get(self, request):
         current_user = request.user
@@ -435,8 +435,7 @@ class MainHomepageView(View):
         if c_user.statusofrequest == 2:
             if c_user.subscription_paid == True:
                 savePost(self, request, current_user)
-                bundle = genBundle(current_user)
-                return render(request, self.template_name, {'bundle':bundle})
+                return redirect('commercial_user:homepage')
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
@@ -1935,7 +1934,7 @@ class PendingRequestsView(View):
         c_user = CommercialUser.objects.get(user=current_user)
         if c_user.statusofrequest == 2:
             if c_user.subscription_paid == True:
-                pay_requests = Request.objects.filter(receiver=current_user, status=0)
+                pay_requests = Request.objects.filter(receiver=str(current_user), status=0)
                 bundle = dict()
                 bundle['requests'] = pay_requests
                 return render(request, self.template_name, {'pay_req': bundle})
@@ -1995,7 +1994,7 @@ class PendingRequestsView(View):
 @method_decorator(decorators, name='dispatch')
 class OTPVerificationFormView(View):
     form_class = OTPVerificationForm
-    template_name = 'commercial_user/otpverify.html'
+    template_name = 'commercial_user/verifyotp.html'
 
     def get(self, request):
         current_user = request.user
@@ -2019,7 +2018,6 @@ class OTPVerificationFormView(View):
         current_user = request.user
 
         form = self.form_class(request.POST)
-        current_user = request.user
         commercial_user = CommercialUser.objects.get(user=current_user)
         if commercial_user.statusofrequest == 2:
             if commercial_user.subscription_paid == True:
@@ -2053,11 +2051,7 @@ class OTPVerificationFormView(View):
 
                             w_dict = dict() 
 
-                            w_dict['Account Type'] = wallet.user_type
-                            w_dict['Amount'] = wallet.amount
-                            w_dict['Remaining Transactions'] = "No Limit"
-
-                            return render(request, 'commercial_user/mywallet.html', {'wallet': w_dict})
+                            return redirect('commercial_user:wallet')
 
                         elif request.session['trans_type'] == 'send':
                             request.session.pop('trans_type', None)
@@ -2079,13 +2073,7 @@ class OTPVerificationFormView(View):
                             request.session.pop('send_to', None)
                             request.session.modified = True
 
-                            w_dict = dict() 
-
-                            w_dict['Account Type'] = sender_wallet.user_type
-                            w_dict['Amount'] = sender_wallet.amount
-                            w_dict['Remaining Transactions'] = "No Limit"
-
-                            return render(request, 'commercial_user/mywallet.html', {'wallet': w_dict})
+                            return redirect('commercial_user:wallet')
 
                         elif request.session['trans_type'] == 'req':
                             request.session.pop('trans_type', None)
@@ -2106,11 +2094,7 @@ class OTPVerificationFormView(View):
 
                             w_dict = dict()
 
-                            w_dict['Account Type'] = sender.user_type
-                            w_dict['Amount'] = sender.amount
-                            w_dict['Remaining Transactions'] = "No Limit"
-
-                            return render(request, 'commercial_user/mywallet.html', {'wallet': w_dict})
+                            return redirect('commercial_user:wallet')
 
                         else:
                             form.add_error('otp', 'Unknown transaction!')
