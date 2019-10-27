@@ -153,19 +153,18 @@ def genBundle(current_user):
     bundle = {'name': name, 'posts':all_posts}
     return bundle
 
-def updateExistingUser(curr_user, first_name, last_name, gender, phone):
+def updateExistingUser(curr_user, first_name, last_name, dob, phone):
     curr_user.first_name = first_name
     curr_user.last_name = last_name
     curr_user.save()
-    try:
+    
+    if curr_user.user_type == 1:
         curr_user = CasualUser.objects.get(user=curr_user)
-    except:
-        pass
-    try:
+    elif curr_user.user_type == 2:
         curr_user = PremiumUser.objects.get(user=curr_user)
-    except:
-        pass
-    curr_user.gender = gender
+    else:
+        curr_user = CommercialUser.objects.get(user=curr_user)
+    curr_user.date_of_birth = dob
     curr_user.phone = phone
     curr_user.save()
 
@@ -269,7 +268,8 @@ class EditProfileFormView(View):
     
     def get(self, request):
         current_user = request.user
-        print(type(current_user))
+        form = self.form_class(None)
+
         if str(current_user) is 'AnonymousUser':
             raise Http404
         elif PremiumUser.objects.get(user=current_user).subscription == 0:
@@ -278,38 +278,26 @@ class EditProfileFormView(View):
             login_user = get_user_info(current_user)
             fname = login_user.user.first_name
             lname = login_user.user.last_name
-            gender = login_user.gender
+            dob = login_user.date_of_birth
             phoneno = login_user.phone
-            bundle = dict()
-            #name = casual_user.user.first_name + ' ' +  casual_user.user.last_name
-            if gender==1:
-                gender = str("Male")
-            elif gender==2:
-                gender = str("Female")
-            elif gender==3:
-                gender = str("Transgender")
-            bundle = {'first_name': fname, 'last_name': lname, 'gender': gender, 'phone': phoneno}
-            return render(request, self.template_name, {'current_user':bundle})
+            form.fields['first_name'].initial = fname
+            form.fields['last_name'].initial = lname
+            form.fields['date_of_birth'].initial = dob
+            form.fields['phone'].initial = phoneno
+            return render(request, self.template_name, {'form':form})
 
     def post(self, request):
         current_user = request.user
+        form = self.form_class(request.POST)
 
-        first_name = request.POST.dict()['first_name']
-        last_name = request.POST.dict()['last_name']
-        gender = request.POST.dict()['gender']
-        phone = request.POST.dict()['phone']
-        gender_string = gender
-        if gender=="Male":
-            gender = 1
-        elif gender=="Female":
-            gender = 2
-        elif gender=="Transgender":
-            gender = 3
-        updateExistingUser(current_user, first_name, last_name, gender, phone)
-        userdetail = dict()
-        userdetail = {'first_name': first_name, 'last_name': last_name, 'gender': gender_string, 'phone': phone}
-    
-        return render(request, self.template_name, {'current_user':userdetail})
+        if form.is_valid():
+            first_name = form.cleaned_data['first_name']
+            last_name = form.cleaned_data['last_name']
+            dob = form.cleaned_data['date_of_birth']
+            phone = form.cleaned_data['phone']
+            updateExistingUser(current_user, first_name, last_name, dob, phone)
+            return HttpResponseRedirect('')
+        return render(request, self.template_name, {'form':form})
 
 
 #___________________________________________________show userdetails(By dynamic url)___________________________
@@ -1312,8 +1300,9 @@ class OTPVerificationFormView(View):
 
                     try:
                         plan = request.session['plan']
+                        t_amount = 50
                         if  plan == "1":
-                            amount = request.session['sub_amount']
+                            amount = float(request.session['sub_amount'])
                             amount = amount - 50
                             
                             groupplan = GroupPlan.objects.get(customer = current_user.username)
@@ -1321,10 +1310,11 @@ class OTPVerificationFormView(View):
                             groupplan.noofgroup = 2
                             groupplan.save()
 
+                            t_amount = 50
                             # Add no. of groups the user can create here
                             flag = True
                         elif plan == "2":
-                            amount = request.session['sub_amount']
+                            amount = float(request.session['sub_amount'])
                             amount = amount - 100
 
                             groupplan = GroupPlan.objects.get(customer = current_user.username)
@@ -1332,10 +1322,11 @@ class OTPVerificationFormView(View):
                             groupplan.noofgroup = 4
                             groupplan.save()
 
+                            t_amount = 100
                             # Add no. of groups the user can create here
                             flag = True
                         elif plan == "3":
-                            amount = request.session['sub_amount']
+                            amount = float(request.session['sub_amount'])
                             amount = amount - 150
 
                             groupplan = GroupPlan.objects.get(customer = current_user.username)
@@ -1343,6 +1334,7 @@ class OTPVerificationFormView(View):
                             groupplan.noofgroup = sys.maxsize
                             groupplan.save()
 
+                            t_amount = 150
                             # Add no. of groups the user can create here
                             flag = True
                         else:
@@ -1352,6 +1344,10 @@ class OTPVerificationFormView(View):
                             wallet = Wallet.objects.get(username=str(current_user))
                             wallet.amount = amount
                             wallet.save()
+
+                            Transaction(sender=str(current_user), receiver='Admin', amount=t_amount, timestamp=timezone.now()).save()
+                            if amount > 0:
+                                Transaction(sender=str(current_user), receiver=str(current_user), amount=amount, timestamp=timezone.now()).save()
 
                             p_user = PremiumUser.objects.get(user=current_user)
                             p_user.subscription = int(plan)
@@ -1660,7 +1656,7 @@ class SubscriptionFormView(View):
                 c = sendOTP(request, email, subject)
 
                 if c == 1:
-                    request.session['sub_amount'] = amount
+                    request.session['sub_amount'] = str(amount)
                     request.session['plan'] = plan
                     return HttpResponseRedirect(reverse('premium_user:otpverify'))
                 else:
@@ -1674,5 +1670,5 @@ class LogoutView(View):
     template_name = 'login/login.html'
     def get(self, request):
         logout(request)
-        return HttpResponseRedirect(reverse('applogin:login'))
+        return HttpResponseRedirect(reverse('login:login'))
 

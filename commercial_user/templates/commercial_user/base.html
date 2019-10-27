@@ -10,6 +10,9 @@
         <link rel="stylesheet" type="text/css" href="{% static 'login/style.css' %}"/>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+
+        {% block head %}
+        {% endblock %}
         
     </head>
     <body>
@@ -127,11 +130,11 @@
                                         <span class="glyphicon glyphicon-usd" aria-hidden="true"></span>&nbsp; My Wallet
                                     </a>
                                 </li>
-                                <li>
+                                <!-- <li>
                                     <a href="{% url 'commercial_user:addmoneytosubscribe' %}">
                                         <span class="glyphicon glyphicon-check" aria-hidden="true"></span>&nbsp; Subscription Status
                                     </a>
-                                </li>
+                                </li> -->
                                 <li>
                                     <a href="{% url 'commercial_user:settings' %}">
                                         <span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>&nbsp; Settings
