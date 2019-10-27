@@ -5,6 +5,7 @@ from django.http import Http404
 from .models import CasualUser, Post, Friend, Wallet, Request, Transaction, FriendRequest, Timeline
 from login.models import User
 from premium_user.models import AddGroup, GroupRequest, PremiumUser, Message, Group
+from commercial_user.models import CommercialUser
 
 from django.contrib import messages
 from django.contrib.auth import logout
@@ -212,6 +213,9 @@ class UserProfileView(View):
         fname = user.first_name
         lname = user.last_name
         
+        print(user.user_type)
+        print(type(user.user_type))
+
         if user.user_type == 1:         # casual-user
             casual_user = CasualUser.objects.get(user=user)
             dob = casual_user.date_of_birth
@@ -223,10 +227,10 @@ class UserProfileView(View):
             gender = premium_user.gender
             email = premium_user.email
         else:                           #commercial-user
-            # commercial_user = CommercialUser.objects.get(user=user)
-            # dob = commercial_user.date_of_birth
-            # gender = commerical_user.gender
-            # email = commercial_user.email
+            commercial_user = CommercialUser.objects.get(user=user)
+            dob = commercial_user.date_of_birth
+            gender = commercial_user.gender
+            email = commercial_user.email
             pass
 
         bundle = {'First Name': fname, 'Last Name':lname, 'Date of Birth': dob, 'Gender':gender,'Email':email}

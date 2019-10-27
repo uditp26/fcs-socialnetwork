@@ -5,7 +5,7 @@ from . import views
 app_name = 'commercial_user'
 
 urlpatterns = [
-    url(r'^$', views.MainHomepageView.as_view(), name='homepage'),
+    url(r'^$', views.HomepageView.as_view(), name='homepage'),
     url(r'myprofile/$', views.ProfileView.as_view(), name='myprofile'),
     url(r'editprofile/$', views.EditProfileFormView.as_view(), name='editprofile'),   
     url(r'listuser/$', views.ListUserView.as_view(), name='listuser'),
@@ -43,7 +43,7 @@ urlpatterns = [
     url(r'mywallet/requestmoney/$', views.RequestMoneyFormView.as_view(), name="requestmoney"),
     url(r'mywallet/pendingrequests/$', views.PendingRequestsView.as_view(), name="pendingrequests"),
     url(r'mywallet/nofriends/$', views.NofriendsView.as_view(), name="nofriends"),
-    url(r'mywallet/otpverify/$', views.OTPVerificationFormView.as_view(), name="otpverify"),
+    url(r'mywallet/verifyotp/$', views.OTPVerificationFormView.as_view(), name="otpverify"),
     
     url(r'subscription/$', views.AddMoneyFormToSubscribeView.as_view(), name="addmoneytosubscribe"),
     
