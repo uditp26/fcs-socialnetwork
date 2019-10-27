@@ -82,7 +82,10 @@ def savePost(request, current_user, visitor=""):
 
     post = request.POST.dict()['postarea']
     # call below function to decrypt(after package install)
-    post =  decryptcipher(current_user, post) 
+    try:
+        post =  decryptcipher(current_user, post) 
+    except:
+        form.add_error('postarea', 'You cipher is encrypted with wrong key.')
     scope = request.POST.dict()['level']
 
     if visitor != "":
@@ -1437,7 +1440,12 @@ def getfriendlist(username1):
 def saveMessage(self, request, sender, receiver):
     search_msg = request.POST.dict()['messagearea']
     # call below function to decrypt(after package install)
-    search_msg = decryptcipher(sender, search_msg) 
+
+    try:
+        search_msg =  decryptcipher(current_user, search_msg) 
+    except:
+        form.add_error('messagearea', 'You cipher is encrypted with wrong key.')
+
     if search_msg:
         getmessage = search_msg
         search_msg = ""
