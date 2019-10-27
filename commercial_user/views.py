@@ -1807,7 +1807,7 @@ class OTPVerificationFormView(View):
                     wallet.save()
 
                     # Add to Transactions table
-                    Transaction(sender=username, receiver=username, amount=float(request.session['amount']), timestamp=timezone.now(tz=None)).save()
+                    Transaction(sender=username, receiver=username, amount=float(request.session['amount']), timestamp=timezone.now()).save()
 
                     request.session.pop('amount', None)
                     request.session.modified = True
@@ -2051,4 +2051,4 @@ class LogoutView(View):
     template_name = 'login/login.html'
     def get(self, request):
         logout(request)
-        return HttpResponseRedirect(reverse('applogin:login'))
+        return HttpResponseRedirect(reverse('login:login'))
