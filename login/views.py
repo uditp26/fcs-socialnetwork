@@ -218,6 +218,7 @@ class RegistrationFormView(View):
                 Timeline(username=username, level=1).save()
                 Friend(username=username, friend_list=[]).save()
                 FriendRequest(requestto = username, requestfrom =[]).save()
+                Post(username=username, friends_posts=[], public_posts=[], frnd_timestamp=[], pblc_timestamp=[]).save()
                 pubkey = getpubpvtkey(username)
 
                 keyanduser = dict()

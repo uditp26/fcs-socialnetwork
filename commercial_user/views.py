@@ -653,12 +653,15 @@ class CreatePagesFormView(View):
                         pagesobject.description.append(description)
                         pagesobject.page_link.append(page_link)
                         pagesobject.save()
+
+                        full_name = User.objects.get(username=username).first_name + ' ' + User.objects.get(username=username).last_name
+
+                        post = Post.objects.get(username=username)
+                        post.public_posts.append("Here\'s a new page I\'ve created: \n\n Page Title: " + title + " \n\n Link to page: <a href="{% url 'commercial_user:viewpage' username page_link %}">{{ title }}</a> \n\n By: " + full_name)
                         
-                        # Create a public post for current user
-                        # Here's a new page I've created:
-                        # Page Title: <title>
-                        # Author: <author>
-                        # <link to page> <a href="{% url 'commercial_user:viewpage' bundle.username link %}"><title></a>
+                        post.pblc_timestamp.append(timezone.now())
+
+                        post.save()
                         
                         return HttpResponseRedirect(reverse('commercial_user:createpage'))
                     else:
