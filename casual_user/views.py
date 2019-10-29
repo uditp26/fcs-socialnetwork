@@ -44,18 +44,6 @@ def decryptcipher(cipher, username):
  
     decrypt_text = cipher.decrypt(ciphertext_new, None).decode()
     return decrypt_text
- 
-def encryption(plain, username):
-    encObj = Encryption.objects.get(user= username)
-    pubkey1 = encObj.publickey
-    pubkey1 = pubkey1.replace("\\n","\n")
-    pubkey = pubkey1
-    msg = plain
-    keyPub = RSA.importKey(pubkey) 
-    cipher = Cipher_PKCS1_v1_5.new(keyPub)
- 
-    cipher_text = cipher.encrypt(msg.encode()) 
-    return cipher_text
 
 
 def get_user_info(current_user):
