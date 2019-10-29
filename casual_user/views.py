@@ -4,7 +4,7 @@ from django.http import Http404
 
 from .models import CasualUser, Post, Friend, Wallet, Request, Transaction, FriendRequest, Timeline
 from login.models import User
-from premium_user.models import AddGroup, GroupRequest, PremiumUser, Message, Group
+from premium_user.models import AddGroup, GroupRequest, PremiumUser, Message, Group, Encryption
 from commercial_user.models import CommercialUser
 
 from django.contrib import messages
