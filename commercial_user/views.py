@@ -29,7 +29,7 @@ import hashlib
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import cache_control
-
+import copy
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='http://127.0.0.1:8000/login/')]
 
 from Crypto.PublicKey import RSA
@@ -38,15 +38,26 @@ def decryptcipher(cipher, username):
     encObj = Encryption.objects.get(user= username)
     prvkey = encObj.privatekey
     prvkey = prvkey.replace("\\n","\n")
-
     ciphertext_new = cipher.encode('utf-8')
     ciphertext_new = ciphertext_new.decode('unicode-escape').encode('ISO-8859-1')
-
+ 
     keyPriv = RSA.importKey(prvkey)
     cipher = Cipher_PKCS1_v1_5.new(keyPriv)
-
+ 
     decrypt_text = cipher.decrypt(ciphertext_new, None).decode()
     return decrypt_text
+ 
+def encryption(plain, username):
+    encObj = Encryption.objects.get(user= username)
+    pubkey1 = encObj.publickey
+    pubkey1 = pubkey1.replace("\\n","\n")
+    pubkey = pubkey1
+    msg = plain
+    keyPub = RSA.importKey(pubkey) 
+    cipher = Cipher_PKCS1_v1_5.new(keyPub)
+ 
+    cipher_text = cipher.encrypt(msg.encode()) 
+    return cipher_text
 
 def priceofplan(plantype):
     if plantype == 1:
@@ -71,11 +82,6 @@ def get_user_info(current_user):
 
 def savePost(request, current_user, visitor=""):
     post = request.POST.dict()['postarea']
-    try:
-        post =  decryptcipher(post, current_user) 
-    except:
-        print("ERROR IN PKI")
-        pass
     scope = request.POST.dict()['level']
 
     if visitor != "":
@@ -2264,22 +2270,22 @@ class InboxView(View):
         else: #pending, not validated yet
             return redirect('commercial_user:verifypan')
         
-
 def saveMessage(self, request, sender, receiver):
     search_msg = request.POST.dict()['messagearea']
+ 
     try:
-        search_msg =  decryptcipher(search_msg, current_user) 
+        search_msg = encryption(search_msg, receiver)
     except:
         print("ERROR IN PKI")
         pass
-
+ 
     if search_msg:
         getmessage = search_msg
         search_msg = ""
         time_stamp = timezone.now()
         userObj = User.objects.get(username = sender)
         sendername = str(userObj.first_name) + ' ' + str(userObj.last_name)
-        update_message = "From " + str(sendername)+" : "+ str(getmessage) + '\n'+ 'At : '+ str(time_stamp)
+        update_message =str(getmessage)
         try:
             user_message = Message.objects.get(sender = sender, receiver = receiver)
             user_message.messages.append(update_message)
@@ -2292,13 +2298,34 @@ def showmessages(sender, receiver):
     count = 0
     try:
         messagebundle1 = Message.objects.get(sender = sender, receiver = receiver)
-        messages1 = list(messagebundle1.messages);  timestamp1 = list(messagebundle1.timestamp)
+        collectmessage = []
+        messages1 = []
+        msg = list(messagebundle1.messages)
+        timestamp1 = list(messagebundle1.timestamp)
+        for i,j in zip(msg, timestamp1):
+            msg11 = decryptcipher(i[2:-1], receiver)
+            userObj = User.objects.get(username = sender)
+            name = str(userObj.first_name) + " " + str(userObj.last_name)
+            messagedec = "From : "+str(name)+", Message : "+str(msg11) + ' ,At : ' + str(j)
+            collectmessage.append(messagedec)
+        messages1 = copy.deepcopy(collectmessage)
+ 
     except:
         messages1 = []; timestamp1 = []; count += 1
         pass
     try:
         messagebundle2 = Message.objects.get(sender = receiver, receiver = sender)
-        messages2 = list(messagebundle2.messages); timestamp2 = list(messagebundle2.timestamp)
+        collectmessage = []
+        messages2 = []
+        msg = list(messagebundle2.messages)
+        timestamp2 = list(messagebundle2.timestamp)
+        for i,j in zip(msg,timestamp2):
+            msg12 = decryptcipher(i[2:-1], sender)
+            userObj = User.objects.get(username = receiver)
+            name = str(userObj.first_name) + " " + str(userObj.last_name)
+            messagedec = "From : "+str(name)+", Message : "+str(msg12) + ' ,At : ' + str(j)
+            collectmessage.append(messagedec)
+        messages2 = copy.deepcopy(collectmessage)
         
     except:
         messages2 = []; timestamp2 = []

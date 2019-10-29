@@ -4,7 +4,7 @@ from django.http import Http404
 
 from .models import CasualUser, Post, Friend, Wallet, Request, Transaction, FriendRequest, Timeline
 from login.models import User
-from premium_user.models import AddGroup, GroupRequest, PremiumUser, Message, Group
+from premium_user.models import AddGroup, GroupRequest, PremiumUser, Message, Group, Encryption
 from commercial_user.models import CommercialUser
 
 from django.contrib import messages
@@ -16,7 +16,7 @@ from django import forms
 from .forms import AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, OTPVerificationForm, SubscriptionForm
 
 from datetime import datetime
-
+import copy
 from django.utils import timezone
 import pytz
 
@@ -36,15 +36,26 @@ def decryptcipher(cipher, username):
     encObj = Encryption.objects.get(user= username)
     prvkey = encObj.privatekey
     prvkey = prvkey.replace("\\n","\n")
-
     ciphertext_new = cipher.encode('utf-8')
     ciphertext_new = ciphertext_new.decode('unicode-escape').encode('ISO-8859-1')
-
+ 
     keyPriv = RSA.importKey(prvkey)
     cipher = Cipher_PKCS1_v1_5.new(keyPriv)
-
+ 
     decrypt_text = cipher.decrypt(ciphertext_new, None).decode()
     return decrypt_text
+ 
+def encryption(plain, username):
+    encObj = Encryption.objects.get(user= username)
+    pubkey1 = encObj.publickey
+    pubkey1 = pubkey1.replace("\\n","\n")
+    pubkey = pubkey1
+    msg = plain
+    keyPub = RSA.importKey(pubkey) 
+    cipher = Cipher_PKCS1_v1_5.new(keyPub)
+ 
+    cipher_text = cipher.encrypt(msg.encode()) 
+    return cipher_text
 
 
 def get_user_info(current_user):
@@ -58,11 +69,6 @@ def get_user_info(current_user):
 
 def savePost(request, current_user, visitor=""):
     post = request.POST.dict()['postarea']
-    try:
-        post =  decryptcipher(post, current_user) 
-    except:
-        print("ERROR IN PKI")
-        pass
     scope = request.POST.dict()['level']
 
     if visitor != "":
@@ -1036,20 +1042,22 @@ class InboxView(View):
 def showmessages(sender, receiver):
     count = 0
     try:
-        messagebundle1 = Message.objects.get(sender = sender, receiver = receiver)
-        messages1 = list(messagebundle1.messages);  timestamp1 = list(messagebundle1.timestamp)
-    except:
-        messages1 = []; timestamp1 = []; count += 1
-        pass
-    try:
         messagebundle2 = Message.objects.get(sender = receiver, receiver = sender)
-        messages2 = list(messagebundle2.messages); timestamp2 = list(messagebundle2.timestamp)
+        collectmessage = []
+        messages2 = []
+        msg = list(messagebundle2.messages)
+        timestamp2 = list(messagebundle2.timestamp)
+        for i,j in zip(msg,timestamp2):
+            msg12 = decryptcipher(i[2:-1], sender)  
+            messagedec = "Message : "+str(msg12) + ' ,At : ' + str(j)
+            collectmessage.append(messagedec)
+        messages2 = copy.deepcopy(collectmessage)
         
     except:
         messages2 = []; timestamp2 = []
         count += 1
         pass
-    if count != 2:
+    if count !=1:
         messages = messages1 + messages2
         timestamp = timestamp1 + timestamp2
         updatemessages = [x for _,x in sorted(zip(timestamp,messages), reverse= True)]
