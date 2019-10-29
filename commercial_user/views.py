@@ -6,7 +6,7 @@ from django.http import Http404
 from login.models import User
 from .models import CommercialUser, Pages
 from casual_user.models import Wallet, Transaction, Request, Post, Friend, FriendRequest, CasualUser, Timeline
-from premium_user.models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message
+from premium_user.models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message, Encryption
 from .forms import AddGroupForm, EditProfileForm, AddMoneyForm, SendMoneyForm, RequestMoneyForm, CreatePagesForm, AddMoneyNewForm, OTPVerificationForm, VerifyPanForm, GroupPlanForm
 
 from django.contrib.auth import logout
@@ -34,6 +34,34 @@ from django.conf import settings
 
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='https://192.168.2.237/login/')]
 
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
+def decryptcipher(cipher, username):
+    encObj = Encryption.objects.get(user= username)
+    prvkey = encObj.privatekey
+    prvkey = prvkey.replace("\\n","\n")
+
+    ciphertext_new = cipher.encode('utf-8')
+    ciphertext_new = ciphertext_new.decode('unicode-escape').encode('ISO-8859-1')
+
+    keyPriv = RSA.importKey(prvkey)
+    cipher = Cipher_PKCS1_v1_5.new(keyPriv)
+
+    decrypt_text = cipher.decrypt(ciphertext_new, None).decode()
+    return decrypt_text
+
+def priceofplan(plantype):
+    if plantype == 1:
+        price = 50
+        noofgroup = 2
+    elif plantype == 2:
+        price = 100
+        noofgroup = 4
+    else:
+        price = 150
+        noofgroup = sys.maxsize     
+    return price, noofgroup
+
 def get_user_info(current_user):
     if current_user.user_type == 1:
         login_user = CasualUser.objects.get(user=current_user)
@@ -45,6 +73,11 @@ def get_user_info(current_user):
 
 def savePost(request, current_user, visitor=""):
     post = request.POST.dict()['postarea']
+    try:
+        post =  decryptcipher(post, current_user) 
+    except:
+        print("ERROR IN PKI")
+        pass
     scope = request.POST.dict()['level']
 
     if visitor != "":
@@ -61,8 +94,8 @@ def savePost(request, current_user, visitor=""):
         elif scope == "1":
             user_posts[0].public_posts.append(post)
             user_posts[0].pblc_timestamp.append(timestamp)
-
         user_posts[0].save()
+        
     else:
         if scope == "0":
             new_post = Post(username=str(current_user), friends_posts = [post], public_posts = [], frnd_timestamp = [timestamp], pblc_timestamp = [])
@@ -1126,6 +1159,8 @@ class FriendView(View):
         else: #pending, not validated yet
             return redirect('commercial_user:verifypan')
 
+#____________________________________________ GROUP ____________________________________
+
 def request_group(current_user, search_name):
     group_name_list = AddGroup.objects.filter(name__icontains = search_name)
     group_name_list = group_name_list.exclude(admin = current_user.username)
@@ -1367,7 +1402,47 @@ class AddGroupFormView(View):
         casual_user = CommercialUser.objects.get(user=current_user)
         if casual_user.statusofrequest == 2:
             if casual_user.subscription_paid == True:
-                return render(request, self.template_name, {'form': form})
+                try:
+                    groupplanofuser = GroupPlan.objects.get(customer = username)
+                    noofgroup = groupplanofuser.noofgroup
+                    
+                    # Recharge validity check
+                    current_date = datetime.now().date()
+                    rechargedate = groupplanofuser.recharge_on.now().date()
+                    days = int((rechargedate - current_date).days)
+                    if days > 30:
+                        status = groupplanofuser.plantype
+                        if status == "1":
+                            groupplanofuser.noofgroup = 2
+                            groupplanofuser.recharge_on = current_date 
+                            groupplanofuser.save()
+                        elif status == "2":
+                            groupplanofuser.noofgroup = 4
+                            groupplanofuser.recharge_on = current_date
+                            groupplanofuser.save()
+                        elif status == "3":
+                            groupplanofuser.noofgroup = sys.maxsize
+                            groupplanofuser.recharge_on = current_date
+                            groupplanofuser.save()
+                        form = self.form_class(None)
+                        return render(request, self.template_name, {'form': form})
+
+                    if noofgroup > 0:
+                        #blank form added
+                        form = self.form_class(None)
+                        return render(request, self.template_name, {'form': form})
+                        
+                    else:
+                        name = current_user.first_name + ' ' + current_user.last_name
+                        bundle = dict(); errortype = 1
+                        bundle[errortype] = name
+                        return render(request, 'commercial_user/error.html', {'bundle': bundle})
+
+                except:
+                    name = current_user.first_name + ' ' + current_user.last_name
+                    bundle = dict(); errortype = 0
+                    bundle[errortype] = name
+                    return render(request, 'commercial_user/error.html', {'bundle': bundle})
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
@@ -1550,14 +1625,18 @@ class DeleteGroupView(View):
                             groupobj.group_list.remove(group); groupobj.save()
                             addgroupObj = AddGroup.objects.get(admin = current_user.username, name = group)
                             addgroupObj.delete()
+
+                            groupplan = GroupPlan.objects.get(customer = username)
+                            groupplan.noofgroup += 1
+                            groupplan.save()
                             break
                     except:
                         pass
 
-                bundle = listowngroup(current_user)
-                return render(request, self.template_name, {'bundle': bundle})
-            else:
-                return redirect('commercial_user:addmoneytosubscribe')
+                        bundle = listowngroup(current_user)
+                        return render(request, self.template_name, {'bundle': bundle})
+                    else:
+                        return redirect('commercial_user:addmoneytosubscribe')
 
         elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
             #up for premium or casual user, and redirect to register page 
@@ -2110,13 +2189,15 @@ class OTPVerificationFormView(View):
         else:
             return redirect('commercial_user:verifypan')
 
-def getfriendlist(username1):
+def getalluserlist(username1):
     try:
-        have_friend = Friend.objects.get(username = username1)
-        friendlist  = list(have_friend.friend_list)
+        allusername = []
+        all_user = User.objects.all()
+        for i in all_user:
+            allusername.append(i.username)
     except:
-        friendlist = []
-    return friendlist
+        allusername = []
+    return allusername
 
 class Saveuser:
     username = ""
@@ -2188,6 +2269,11 @@ class InboxView(View):
 
 def saveMessage(self, request, sender, receiver):
     search_msg = request.POST.dict()['messagearea']
+    try:
+        search_msg =  decryptcipher(search_msg, current_user) 
+    except:
+        print("ERROR IN PKI")
+        pass
 
     if search_msg:
         getmessage = search_msg

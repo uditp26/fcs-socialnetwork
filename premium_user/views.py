@@ -3,7 +3,7 @@ from django.views.generic import View
 from django.http import Http404
 
 from login.models import User
-from .models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message
+from .models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message, Encryption
 from casual_user.models import Wallet, Transaction, Request, Post, Friend, FriendRequest, CasualUser, Timeline
 from .forms import AddGroupForm, GroupPlanForm, AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, OTPVerificationForm, SubscriptionForm
 
@@ -30,7 +30,33 @@ from django.views.decorators.cache import cache_control
 
 from django.conf import settings
 
+#! pip install cryptograhy
+#! pip install pycrypto
+#! pip install pycryptodome
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='https://192.168.2.237/login/')]
+
+# from Crypto.PublicKey import RSA
+# from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
+def decryptcipher(cipher, username):
+    encObj = Encryption.objects.get(user= username)
+    prvkey = encObj.privatekey
+    prvkey = prvkey.replace("\\n","\n")
+
+    ciphertext_new = cipher.encode('utf-8')
+    ciphertext_new = ciphertext_new.decode('unicode-escape').encode('ISO-8859-1')
+
+    keyPriv = RSA.importKey(prvkey)
+    cipher = Cipher_PKCS1_v1_5.new(keyPriv)
+
+    decrypt_text = cipher.decrypt(ciphertext_new, None).decode()
+    print("decrypted msg->", decrypt_text)
+    return decrypt_text
 
 def priceofplan(plantype):
     if plantype == 1:
@@ -56,6 +82,12 @@ def get_user_info(current_user):
 def savePost(request, current_user, visitor=""):
 
     post = request.POST.dict()['postarea']
+    # call below function to decrypt(after package install)
+    try:
+        post =  decryptcipher(post, current_user) 
+    except:
+        print("ERROR IN PKI")
+        pass
     scope = request.POST.dict()['level']
 
     if visitor != "":
@@ -161,13 +193,14 @@ class HomepageView(View):
         bundle = genBundle(current_user)
         return HttpResponseRedirect(reverse('premium_user:homepage'))
 
+#___________________________________________________group_________________________________________
 #pass to groupdetails.html
 def getgroupdetails(current_user):
     bundle = {}
     try:
         groups = AddGroup.objects.filter(admin = current_user.username)
         groupplan = GroupPlan.objects.get(customer = current_user.username)
-        print("YES")
+
         groupinfo = {}
         key = 1; anotherkey  = 11
         for group in groups:
@@ -740,14 +773,33 @@ class AddGroupFormView(View):
         try:
             groupplanofuser = GroupPlan.objects.get(customer = username)
             noofgroup = groupplanofuser.noofgroup
+            
             # Recharge validity check
             current_date = datetime.now().date()
             rechargedate = groupplanofuser.recharge_on.now().date()
             days = int((rechargedate - current_date).days)
-            if noofgroup > 0 and days <= 30:
+            if days > 30:
+                status = groupplanofuser.plantype
+                if status == "1":
+                    groupplanofuser.noofgroup = 2
+                    groupplanofuser.recharge_on = current_date 
+                    groupplanofuser.save()
+                elif status == "2":
+                    groupplanofuser.noofgroup = 4
+                    groupplanofuser.recharge_on = current_date
+                    groupplanofuser.save()
+                elif status == "3":
+                    groupplanofuser.noofgroup = sys.maxsize
+                    groupplanofuser.recharge_on = current_date
+                    groupplanofuser.save()
+                form = self.form_class(None)
+                return render(request, self.template_name, {'form': form})
+
+            if noofgroup > 0:
                 #blank form added
                 form = self.form_class(None)
                 return render(request, self.template_name, {'form': form})
+
             else:
                 name = current_user.first_name + ' ' + current_user.last_name
                 bundle = dict(); errortype = 1
@@ -793,6 +845,7 @@ class AddGroupFormView(View):
             addgroup.save()
             groupplan = GroupPlan.objects.get(customer = username)
             groupplan.noofgroup -=1
+            groupplan.save()
             try:
                 group = Group.objects.get(admin = current_user.username)
                 group.group_list.append(addgroup.name)
@@ -803,7 +856,7 @@ class AddGroupFormView(View):
                 group.group_list = []
                 group.group_list.append(addgroup.name)
                 group.save()
-
+            
         return HttpResponseRedirect(reverse('premium_user:groupdetails'))
     
 
@@ -907,6 +960,11 @@ class DeleteGroupView(View):
                     groupobj.group_list.remove(group); groupobj.save()
                     addgroupObj = AddGroup.objects.get(admin = current_user.username, name = group)
                     addgroupObj.delete()
+                    
+                    groupplan = GroupPlan.objects.get(customer = current_user.username)
+                    groupplan.noofgroup += 1
+                    groupplan.save()
+
                     break
             except:
                 pass
@@ -1227,7 +1285,7 @@ class OTPVerificationFormView(View):
         current_user = request.user
 
         form = self.form_class(request.POST)
-
+        current_date = datetime.now().date()
         if form.is_valid():
             otp = form.cleaned_data['otp']
 
@@ -1249,18 +1307,21 @@ class OTPVerificationFormView(View):
                         if  plan == "1":
                             amount = float(request.session['sub_amount'])
                             amount = amount - 50
+                            GroupPlan(customer = current_user.username, recharge_on = current_date, plantype = plan, noofgroup = 2).save()
                             t_amount = 50
                             # Add no. of groups the user can create here
                             flag = True
                         elif plan == "2":
                             amount = float(request.session['sub_amount'])
                             amount = amount - 100
+                            GroupPlan(customer = current_user.username, recharge_on = current_date, plantype = plan, noofgroup = 4).save()
                             t_amount = 100
                             # Add no. of groups the user can create here
                             flag = True
                         elif plan == "3":
                             amount = float(request.session['sub_amount'])
                             amount = amount - 150
+                            GroupPlan(customer = current_user.username, recharge_on = current_date, plantype = plan, noofgroup = sys.maxsize).save()
                             t_amount = 150
                             # Add no. of groups the user can create here
                             flag = True
@@ -1380,6 +1441,13 @@ def getfriendlist(username1):
 
 def saveMessage(self, request, sender, receiver):
     search_msg = request.POST.dict()['messagearea']
+    # call below function to decrypt(after package install)
+
+    try:
+        search_msg =  decryptcipher(search_msg, current_user) 
+    except:
+        print("ERROR IN PKI")
+        pass
 
     if search_msg:
         getmessage = search_msg

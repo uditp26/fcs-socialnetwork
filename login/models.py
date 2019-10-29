@@ -16,3 +16,4 @@ class FailedLogin(models.Model):
     count = models.PositiveSmallIntegerField()
     last_login = models.DecimalField(decimal_places=2, max_digits=20)
     next_login = models.DecimalField(decimal_places=2, max_digits=20)
+

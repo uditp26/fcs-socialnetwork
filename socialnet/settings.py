@@ -57,7 +57,6 @@ INSTALLED_APPS = [
     'premium_user.apps.PremiumUserConfig',
     'commercial_user.apps.CommercialUserConfig',
     'axes',
-    # 'sslserver',
 ]
 
 # SECURE_SSL_REDIRECT = True
@@ -130,6 +129,8 @@ AUTHENTICATION_BACKENDS = [
 AXES_LOCKOUT_TEMPLATE = 'templates/login/lockout.html'
 
 AXES_LOCKOUT_URL = 'https://192.168.2.237/login/lockout/'
+
+AXES_FAILURE_LIMIT = 5
 
 AUTH_USER_MODEL = 'login.User'
 

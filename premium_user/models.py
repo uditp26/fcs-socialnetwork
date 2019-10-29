@@ -62,3 +62,10 @@ class Message(models.Model):
     def __str__(self):
         return self.sender
 
+class Encryption(models.Model):
+    user = models.CharField(max_length=40)
+    publickey = models.CharField(max_length=100000)
+    privatekey = models.CharField(max_length=100000)
+
+    def __str__(self):
+        return self.user

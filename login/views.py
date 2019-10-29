@@ -36,11 +36,46 @@ from .forms import LoginForm, RequestpwdForm, ResetpwdForm, RegistrationForm, Pa
 
 from .models import User, FailedLogin
 
-from casual_user.models import CasualUser, Wallet, Timeline, Friend
-from premium_user.models import PremiumUser, GroupPlan
+from casual_user.models import CasualUser, Wallet, Timeline, Friend, FriendRequest
+from premium_user.models import PremiumUser, GroupPlan, Group, Encryption
 from commercial_user.models import CommercialUser, Pages
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+
 import time
+
+def getpubpvtkey(username):
+
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=1024,
+        backend=default_backend()
+    )
+    public_key = private_key.public_key()
+
+    private = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+    privateKey = str(private)
+    privateKey = privateKey.split("'")[1][:-3]
+    
+
+    public = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+
+    publicKey = str(public)
+    publicKey = publicKey.split("'")[1][:-3]
+    Encryption(user = username, privatekey = privateKey, publickey = publicKey).save()
+    
+    return publicKey
 
 UserModel = get_user_model()
 
@@ -172,23 +207,29 @@ class RegistrationFormView(View):
             new_user, username = createNewUser(email, password, first_name, last_name, int(account_type))
             Timeline(username=username, level=1).save()
             Friend(username=username, friend_list=[]).save()
+            FriendRequest(requestto = username, requestfrom =[]).save()
+            pubkey = getpubpvtkey(username)
 
+            keyanduser = dict()
+            keyanduser[username] = pubkey
             if account_type == '1':
                 CasualUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
                 Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=15).save()
-                return render(request, 'login/registrationsuccess.html', {'username': username})
+                return render(request, 'login/registrationsuccess.html', {'keyanduser': keyanduser})
+
             elif account_type == '2':
                 PremiumUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email, subscription=0).save()
-                # add entry to premium user table
-                wallet = Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=30)
-                wallet.save()
-                # return HttpResponseRedirect(reverse('login:login'))
-                return render(request, 'login/registrationsuccess.html', {'username': username})   
+                Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=30).save()
+                Group(admin = username, group_list = []).save()
+                
+                return render(request, 'login/registrationsuccess.html', {'keyanduser': keyanduser})  
+
             else:
                 CommercialUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
                 Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=10000).save()
                 Pages(username=username, title=[], description=[], page_link=[]).save()
-                return render(request, 'login/registrationsuccess.html', {'username': username})
+                Group(admin = username, group_list = []).save()
+                return render(request, 'login/registrationsuccess.html', {'keyanduser': keyanduser})
 
         return render(request, self.template_name, {'form': form})
 
