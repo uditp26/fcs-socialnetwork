@@ -342,9 +342,3 @@ class LogoutView(View):
     def get(self, request):
         logout(request)
         return redirect('login:login')
-
-class LockoutView(View):
-    template_name = 'login/lockout.html'
-
-    def get(self, request):
-        return render(request, self.template_name)
