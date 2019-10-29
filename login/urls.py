@@ -14,3 +14,4 @@ urlpatterns = [
     url(r'password_reset_complete/', views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
     url(r'logout/$', views.LogoutView.as_view(), name='logout'),
 ]
+

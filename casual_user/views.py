@@ -4,7 +4,7 @@ from django.http import Http404
 
 from .models import CasualUser, Post, Friend, Wallet, Request, Transaction, FriendRequest, Timeline
 from login.models import User
-from premium_user.models import AddGroup, GroupRequest, PremiumUser, Message, Group
+from premium_user.models import AddGroup, GroupRequest, PremiumUser, Message, Group, Encryption
 from commercial_user.models import CommercialUser
 
 from django.contrib import messages
@@ -32,6 +32,23 @@ from django.conf import settings
 
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='https://192.168.2.237/login/')]
 
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
+def decryptcipher(cipher, username):
+    encObj = Encryption.objects.get(user= username)
+    prvkey = encObj.privatekey
+    prvkey = prvkey.replace("\\n","\n")
+
+    ciphertext_new = cipher.encode('utf-8')
+    ciphertext_new = ciphertext_new.decode('unicode-escape').encode('ISO-8859-1')
+
+    keyPriv = RSA.importKey(prvkey)
+    cipher = Cipher_PKCS1_v1_5.new(keyPriv)
+
+    decrypt_text = cipher.decrypt(ciphertext_new, None).decode()
+    return decrypt_text
+
+
 def get_user_info(current_user):
     if current_user.user_type == 1:
         login_user = CasualUser.objects.get(user=current_user)
@@ -43,6 +60,11 @@ def get_user_info(current_user):
 
 def savePost(request, current_user, visitor=""):
     post = request.POST.dict()['postarea']
+    try:
+        post =  decryptcipher(post, current_user) 
+    except:
+        print("ERROR IN PKI")
+        pass
     scope = request.POST.dict()['level']
 
     if visitor != "":
@@ -421,11 +443,13 @@ def showfrndlist(username1):
         current_user_friendlist  = list(have_friend.friend_list)
         
         name_of_friendlist = []
-        for i in current_user_friendlist:
-            user = User.objects.get(username = i)
-            name = str(user.first_name) + ' ' + str(user.last_name)
-            name_of_friendlist.append(name)
-
+        if current_user_friendlist:
+            for i in current_user_friendlist:
+                user = User.objects.get(username = i)
+                name = str(user.first_name) + ' ' + str(user.last_name)
+                name_of_friendlist.append(name)
+        else:
+            current_user_friendlist = []
     except:
         have_friend =  Friend()
         current_user_friendlist = []
@@ -442,12 +466,16 @@ def checkPrivacySettings(friends_zip):
     level_list = []
     uname_list = []
     name_list = []
-    for username, name in friends_zip:
-        uname_list.append(username)
-        name_list.append(name)
-        level_list.append(str(Timeline.objects.get(username=username).level))
+    if friends_zip:
+        for username, name in friends_zip:
+            uname_list.append(username)
+            name_list.append(name)
+            level_list.append(str(Timeline.objects.get(username=username).level))
 
-    return zip(uname_list, name_list, level_list)
+        return zip(uname_list, name_list, level_list)
+    else:
+        friends_zip = []
+        return friends_zip
 
 #for display friendlist
 @method_decorator(decorators, name='dispatch')
@@ -457,6 +485,7 @@ class FriendView(View):
     def get(self, request):
         current_user = request.user
         friends_zip, have_friend = showfrndlist(current_user)
+        
         friends_zip = checkPrivacySettings(friends_zip)
         return render(request, self.template_name, {'current_user': friends_zip})
 

@@ -26,7 +26,7 @@
                         {% for key, value in userinfo.items %}
                             {% for username, name in value %}:
                             <tr>
-                                <td><a href="{% url 'premium_user:premiumuserdetail' username %}">{{ name }}</a></td>
+                                <td><a href="{% url 'premium_user:userprofile' username %}">{{ name }}</a></td>
                                 <td> <input type="submit" name= {{ username }} class="btn btn-primary" value="Send Message" /> </td>
                             </tr>
                             {% endfor %}
