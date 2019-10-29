@@ -84,7 +84,7 @@ class LoginFormView(View):
 
             # returns user objects if credentials are correct
 
-            user = authenticate(username=username, password=password)
+            user = authenticate(request=request, username=username, password=password)
 
             if user is not None:
 
@@ -342,3 +342,9 @@ class LogoutView(View):
     def get(self, request):
         logout(request)
         return redirect('login:login')
+
+class LockoutView(View):
+    template_name = 'login/lockout.html'
+
+    def get(self, request):
+        return render(request, self.template_name)

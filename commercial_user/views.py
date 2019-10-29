@@ -30,6 +30,8 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import cache_control
 
+from django.conf import settings
+
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='https://192.168.2.237/login/')]
 
 def get_user_info(current_user):
@@ -191,8 +193,8 @@ def notifyAdmin(current_user):
     c = send_mail(
         'Verification for Commercial User',
         message,
-        'admin@fcs.com',
-        ['admin@fcs.com'],
+        settings.EMAIL_HOST_USER,
+        [settings.EMAIL_HOST_USER],
         fail_silently=False,
     )
 
@@ -1691,7 +1693,7 @@ def generateOTP():
 def sendOTP(request, email, subject):
     otp = generateOTP()
 
-    message = 'The one-time password for this transaction is: ' + otp + '. This otp is valid for 180 seconds only. Please enter the code for completing this transaction.'
+    message = 'The one-time password for this transaction is: ' + otp + '. This otp is valid for 600 seconds only. Please enter the code for completing this transaction.'
 
     # vulnerable!
     request.session['otp'] = otp
@@ -1703,7 +1705,7 @@ def sendOTP(request, email, subject):
     c = send_mail(
         subject,
         message,
-        'admin@socialnet.com',
+        settings.EMAIL_HOST_USER,
         [email],
         fail_silently=False,
     )
@@ -2027,7 +2029,7 @@ class OTPVerificationFormView(View):
 
                     if request.session['otp'] != otp:
                         form.add_error('otp', 'Wrong OTP entered!')
-                    elif time.time() > float(request.session['timer']) + 180:
+                    elif time.time() > float(request.session['timer']) + 600:
                         form.add_error('otp', 'Timer expired!')
                     else: 
                         request.session.pop('otp', None)

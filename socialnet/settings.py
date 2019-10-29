@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'casual_user.apps.CasualUserConfig',
     'premium_user.apps.PremiumUserConfig',
     'commercial_user.apps.CommercialUserConfig',
+    'axes',
     # 'sslserver',
 ]
 
@@ -69,6 +70,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'axes.middleware.AxesMiddleware',
 ]
 
 ROOT_URLCONF = 'socialnet.urls'
@@ -120,9 +122,14 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTHENTICATION_BACKENDS = (
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesBackend',
     'django.contrib.auth.backends.ModelBackend',
-)
+]
+
+AXES_LOCKOUT_TEMPLATE = 'templates/login/lockout.html'
+
+AXES_LOCKOUT_URL = 'https://192.168.2.237/login/lockout/'
 
 AUTH_USER_MODEL = 'login.User'
 
