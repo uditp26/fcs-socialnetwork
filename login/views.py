@@ -36,7 +36,7 @@ from .forms import LoginForm, RequestpwdForm, ResetpwdForm, RegistrationForm, Pa
 
 from .models import User, FailedLogin
 
-from casual_user.models import CasualUser, Wallet, Timeline, Friend, FriendRequest
+from casual_user.models import CasualUser, Wallet, Timeline, Friend, FriendRequest, Post
 from premium_user.models import PremiumUser, GroupPlan, Group, Encryption
 from commercial_user.models import CommercialUser, Pages
 
@@ -179,6 +179,13 @@ class LoginFormView(View):
                         form.add_error('username', "User credentials did not match existing records.")
         return render(request, self.template_name, {'form': form})
 
+def checkExistingUsers(email):
+    try:
+        User.objects.get(email=email)
+        return True
+    except:
+        return False
+
 class RegistrationFormView(View):
     form_class = RegistrationForm
     template_name = 'login/registration_form.html'
@@ -204,32 +211,38 @@ class RegistrationFormView(View):
             email = form.cleaned_data['email']
             password = form.cleaned_data['password']
 
-            new_user, username = createNewUser(email, password, first_name, last_name, int(account_type))
-            Timeline(username=username, level=1).save()
-            Friend(username=username, friend_list=[]).save()
-            FriendRequest(requestto = username, requestfrom =[]).save()
-            pubkey = getpubpvtkey(username)
+            flag = checkExistingUsers(email)
 
-            keyanduser = dict()
-            keyanduser[username] = pubkey
-            if account_type == '1':
-                CasualUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
-                Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=15).save()
-                return render(request, 'login/registrationsuccess.html', {'keyanduser': keyanduser})
+            if flag == False:
+                new_user, username = createNewUser(email, password, first_name, last_name, int(account_type))
+                Timeline(username=username, level=1).save()
+                Friend(username=username, friend_list=[]).save()
+                FriendRequest(requestto = username, requestfrom =[]).save()
+                Post(username=username, friends_posts=[], public_posts=[], frnd_timestamp=[], pblc_timestamp=[]).save()
+                pubkey = getpubpvtkey(username)
 
-            elif account_type == '2':
-                PremiumUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email, subscription=0).save()
-                Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=30).save()
-                Group(admin = username, group_list = []).save()
-                
-                return render(request, 'login/registrationsuccess.html', {'keyanduser': keyanduser})  
+                keyanduser = dict()
+                keyanduser[username] = pubkey
+                if account_type == '1':
+                    CasualUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
+                    Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=15).save()
+                    return render(request, 'login/registrationsuccess.html', {'keyanduser': keyanduser})
 
+                elif account_type == '2':
+                    PremiumUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email, subscription=0).save()
+                    Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=30).save()
+                    Group(admin = username, group_list = []).save()
+                    
+                    return render(request, 'login/registrationsuccess.html', {'keyanduser': keyanduser})  
+
+                else:
+                    CommercialUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
+                    Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=10000).save()
+                    Pages(username=username, title=[], description=[], page_link=[]).save()
+                    Group(admin = username, group_list = []).save()
+                    return render(request, 'login/registrationsuccess.html', {'keyanduser': keyanduser})
             else:
-                CommercialUser(user=new_user, date_of_birth=date_of_birth, gender=gender, phone=phone, email=email).save()
-                Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=10000).save()
-                Pages(username=username, title=[], description=[], page_link=[]).save()
-                Group(admin = username, group_list = []).save()
-                return render(request, 'login/registrationsuccess.html', {'keyanduser': keyanduser})
+                form.add_error('email', 'A user is already registered with this email.')
 
         return render(request, self.template_name, {'form': form})
 
