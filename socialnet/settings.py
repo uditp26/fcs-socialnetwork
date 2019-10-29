@@ -128,6 +128,12 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
+AXES_LOCKOUT_TEMPLATE = 'login/lockout.html'
+
+AXES_LOCKOUT_URL = 'https://192.168.2.237/login/lockout/'
+
+AXES_FAILURE_LIMIT = 5
+
 AUTH_USER_MODEL = 'login.User'
 
 # Internationalization

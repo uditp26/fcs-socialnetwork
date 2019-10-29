@@ -1,0 +1,18 @@
+{% extends 'login/base.html' %}
+{% block title %}User Lockout{% endblock %}
+{% block body %}
+
+<div style="padding-bottom: 1cm">
+	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
+		<h1 style="text-indent: 15cm"><font color="white">User Lockout Initiated</font></h1>
+	</div>
+</div>
+
+<div class="container">
+	<div class="container-fluid">
+		<div class="col-lg-offset-2 col-sm-10" style="padding: 20px">
+			<h4>Our system has identified multiple failed login attempts from your IP address. To prevent malicious use of the website, our system blocks the IP address in such cases. If this has happened accidentally, we suggest you to mail the system admin at <a href="">elliot.alderson2048@gmail.com</a> with your username for a request to unblock your IP address.</h4>
+		</div>
+	</div>
+</div>
+{% endblock %}
