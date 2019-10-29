@@ -37,8 +37,8 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
+# from Crypto.PublicKey import RSA
+# from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
 
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='http://127.0.0.1:8000/login/')]
 
