@@ -3,7 +3,7 @@ from django.views.generic import View
 from django.http import Http404
 
 from login.models import User
-from .models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message
+from .models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message, Encryption
 from casual_user.models import Wallet, Transaction, Request, Post, Friend, FriendRequest, CasualUser, Timeline
 from .forms import AddGroupForm, GroupPlanForm, AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, OTPVerificationForm, SubscriptionForm
 
@@ -37,15 +37,14 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 
-# from Crypto.PublicKey import RSA
-# from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
-
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='http://127.0.0.1:8000/login/')]
 
+# from Crypto.PublicKey import RSA
+# from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
 def decryptcipher(cipher, username):
     encObj = Encryption.objects.get(user= username)
     prvkey = encObj.privatekey
-    prvkey = prvkey.replace("\\\\n","\n")
+    prvkey = prvkey.replace("\\n","\n")
 
     ciphertext_new = cipher.encode('utf-8')
     ciphertext_new = ciphertext_new.decode('unicode-escape').encode('ISO-8859-1')
@@ -83,7 +82,7 @@ def savePost(request, current_user, visitor=""):
     post = request.POST.dict()['postarea']
     # call below function to decrypt(after package install)
     try:
-        post =  decryptcipher(current_user, post) 
+        post =  decryptcipher(post, current_user) 
     except:
         print("ERROR IN PKI")
         pass
@@ -1443,9 +1442,9 @@ def saveMessage(self, request, sender, receiver):
     # call below function to decrypt(after package install)
 
     try:
-        search_msg =  decryptcipher(current_user, search_msg) 
+        search_msg =  decryptcipher(search_msg, current_user) 
     except:
-        Print("ERROR IN PKI")
+        print("ERROR IN PKI")
         pass
 
     if search_msg:

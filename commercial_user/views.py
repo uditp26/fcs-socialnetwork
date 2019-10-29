@@ -6,7 +6,7 @@ from django.http import Http404
 from login.models import User
 from .models import CommercialUser, Pages
 from casual_user.models import Wallet, Transaction, Request, Post, Friend, FriendRequest, CasualUser, Timeline
-from premium_user.models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message
+from premium_user.models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message, Encryption
 from .forms import AddGroupForm, EditProfileForm, AddMoneyForm, SendMoneyForm, RequestMoneyForm, CreatePagesForm, AddMoneyNewForm, OTPVerificationForm, VerifyPanForm, GroupPlanForm
 
 from django.contrib.auth import logout
@@ -32,6 +32,22 @@ from django.views.decorators.cache import cache_control
 
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='http://127.0.0.1:8000/login/')]
 
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
+def decryptcipher(cipher, username):
+    encObj = Encryption.objects.get(user= username)
+    prvkey = encObj.privatekey
+    prvkey = prvkey.replace("\\n","\n")
+
+    ciphertext_new = cipher.encode('utf-8')
+    ciphertext_new = ciphertext_new.decode('unicode-escape').encode('ISO-8859-1')
+
+    keyPriv = RSA.importKey(prvkey)
+    cipher = Cipher_PKCS1_v1_5.new(keyPriv)
+
+    decrypt_text = cipher.decrypt(ciphertext_new, None).decode()
+    return decrypt_text
+
 def priceofplan(plantype):
     if plantype == 1:
         price = 50
@@ -54,9 +70,12 @@ def get_user_info(current_user):
     return login_user
 
 def savePost(request, current_user, visitor=""):
-    print("Previous")
     post = request.POST.dict()['postarea']
-    print("NEXT")
+    try:
+        post =  decryptcipher(post, current_user) 
+    except:
+        print("ERROR IN PKI")
+        pass
     scope = request.POST.dict()['level']
 
     if visitor != "":
@@ -2248,6 +2267,11 @@ class InboxView(View):
 
 def saveMessage(self, request, sender, receiver):
     search_msg = request.POST.dict()['messagearea']
+    try:
+        search_msg =  decryptcipher(search_msg, current_user) 
+    except:
+        print("ERROR IN PKI")
+        pass
 
     if search_msg:
         getmessage = search_msg
