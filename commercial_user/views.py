@@ -640,7 +640,7 @@ class CreatePagesFormView(View):
                     title = form.cleaned_data['page_title']
                     description = form.cleaned_data['page_description']
 
-                    if re.match(r'[-a-zA-Z0-9_]+', title):
+                    if re.search('^[a-zA-Z0-9][a-zA-Z0-9\s]*$', title):
                 
                         #page_link 
 
@@ -665,7 +665,8 @@ class CreatePagesFormView(View):
                         
                         return HttpResponseRedirect(reverse('commercial_user:createpage'))
                     else:
-                        form.add_error('page_title', "You can only use letters, numbers, '-' and '_' for title.")
+                        form.add_error('page_title', 'You can only use letters, numbers and spaces for title.')
+                        return render(request, self.template_name, {'form':form})
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
@@ -713,7 +714,27 @@ class MyPagesListView(View):
 
             else: #if not valid pan, then redirect to another page. Suggest user to sign
             #up for premium or casual user, and redirect to register page
-                return redirect('commercial_user:denied') 
+                return redirect('commercial_user:denied')
+
+def getpageinfo(request, username, url):
+    p_obj = Pages.objects.get(username=username)
+    bundle = dict()
+    title = ""
+    author = ""
+    body = ""
+
+    for i in range(len(p_obj.page_link)):
+        if p_obj.page_link[i] == url:
+            title = p_obj.title[i]
+            usr = User.objects.get(username=username)
+            author = usr.first_name + " " + usr.last_name
+            body = p_obj.description[i]
+            break
+    
+    bundle['title'] = title
+    bundle['author'] = author
+    bundle['body'] = body
+    return bundle
 
 @method_decorator(decorators, name='dispatch')
 class ViewMyPageView(View):
@@ -724,39 +745,37 @@ class ViewMyPageView(View):
         if str(current_user) is 'AnonymousUser':
             raise Http404
         else:
-            commercial_user = CommercialUser.objects.get(user=current_user)
-
-            if commercial_user.statusofrequest == 2:
-                if commercial_user.subscription_paid == True:
-                    p_obj = Pages.objects.get(username=username)
-
-                    bundle = dict()
-                    title = ""
-                    author = ""
-                    body = ""
-
-                    for i in range(len(p_obj.page_link)):
-                        if p_obj.page_link[i] == url:
-                            title = p_obj.title[i]
-                            usr = User.objects.get(username=username)
-                            author = usr.first_name + " " + usr.last_name
-                            body = p_obj.description[i]
-                            break
-                    
-                    bundle['title'] = title
-                    bundle['author'] = author
-                    bundle['body'] = body
-
+            flag = 0
+            iscasualorpremium = len(CommercialUser.objects.filter(user=current_user))
+            if iscasualorpremium == 0:
+                ispremium = len(PremiumUser.objects.filter(user=current_user))
+                if ispremium == 0: 
+                    bundle = getpageinfo(request, username, url)
                     return render(request, self.template_name, {'bundle':bundle})
                 else:
-                    return redirect('commercial_user:addmoneytosubscribe')
+                    premObj = PremiumUser.objects.get(user=current_user)
+                    if premObj.subscription != 0:
+                        bundle = getpageinfo(request, username, url)
+                        return render(request, self.template_name, {'bundle':bundle})
+                    else:
+                        return redirect('premium_user:groupplan')
+            else:
+                commercial_user = CommercialUser.objects.get(user=current_user)
 
-            elif commercial_user.statusofrequest == 1 or commercial_user.statusofrequest == 4: #pending, not validated yet
-                return redirect('commercial_user:verifypan')
+                if commercial_user.statusofrequest == 2:
+                    if commercial_user.subscription_paid == True:
+                        bundle = getpageinfo(request, username, url)
 
-            else: #if not valid pan, then redirect to another page. Suggest user to sign
-            #up for premium or casual user, and redirect to register page
-                return redirect('commercial_user:denied') 
+                        return render(request, self.template_name, {'bundle':bundle})
+                    else:
+                        return redirect('commercial_user:addmoneytosubscribe')
+
+                elif commercial_user.statusofrequest == 1 or commercial_user.statusofrequest == 4: #pending, not validated yet
+                    return redirect('commercial_user:verifypan')
+
+                else: #if not valid pan, then redirect to another page. Suggest user to sign
+                #up for premium or casual user, and redirect to register page
+                    return redirect('commercial_user:denied')
 
 
 @method_decorator(decorators, name='dispatch')
@@ -844,7 +863,7 @@ class UserProfileView(View):
                 else:                           #commercial-user
                     commercial_user = CommercialUser.objects.get(user=user)
                     dob = commercial_user.date_of_birth
-                    gender = commerical_user.gender
+                    gender = commercial_user.gender
                     email = commercial_user.email
 
                 if gender==1:
@@ -2281,6 +2300,14 @@ class InboxView(View):
 
         else: #pending, not validated yet
             return redirect('commercial_user:verifypan')
+
+def getfriendlist(username1):
+    try:
+        have_friend = Friend.objects.get(username = username1)
+        friendlist  = list(have_friend.friend_list)
+    except:
+        friendlist = []
+    return friendlist
         
 
 def saveMessage(self, request, sender, receiver):

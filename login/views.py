@@ -36,7 +36,7 @@ from .forms import LoginForm, RequestpwdForm, ResetpwdForm, RegistrationForm, Pa
 
 from .models import User, FailedLogin
 
-from casual_user.models import CasualUser, Wallet, Timeline, Friend, FriendRequest
+from casual_user.models import CasualUser, Wallet, Timeline, Friend, FriendRequest, Post
 from premium_user.models import PremiumUser, GroupPlan, Group, Encryption
 from commercial_user.models import CommercialUser, Pages
 

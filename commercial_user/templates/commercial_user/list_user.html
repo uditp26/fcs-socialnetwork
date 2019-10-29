@@ -26,7 +26,7 @@
                 </tr>
             </thead>
             <tbody>
-                    {% comment %} <form action="{% url 'casual_user:friend' %}" method = "GET">
+                    {% comment %} <form action="{% url 'commercial_user:friend' %}" method = "GET">
                     {% csrf_token %} {% endcomment %}
                 <form action="#" method="post"> 
                     {% csrf_token %}
@@ -34,7 +34,7 @@
                     {% for key1, value1 in bundle.items %}
                         {% for key2, value2 in value1.items %}
                             <tr>
-                                <td><a href="{% url 'premium_user:userprofile' key1.username %}">{{ key2 }}</a></td>
+                                <td><a href="{% url 'commercial_user:userprofile' key1.username %}">{{ key2 }}</a></td>
                                 <td>
                                     {% if value2 == 0 %}
                                         <button name = {{ key1 }} type="submit" class="btn btn-default" value="Unfriend">Unfriend</button>

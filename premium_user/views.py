@@ -5,6 +5,7 @@ from django.http import Http404
 from login.models import User
 from .models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message, Encryption
 from casual_user.models import Wallet, Transaction, Request, Post, Friend, FriendRequest, CasualUser, Timeline
+from commercial_user.models import CommercialUser
 from .forms import AddGroupForm, GroupPlanForm, AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, OTPVerificationForm, SubscriptionForm
 
 from django.contrib.auth import logout
