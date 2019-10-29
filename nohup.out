@@ -1,0 +1,53 @@
+Watching for file changes with StatReloader
+Not Found: /
+[11/Oct/2019 12:35:43] "GET / HTTP/1.1" 404 2146
+Not Found: /favicon.ico
+[11/Oct/2019 12:35:44] "GET /favicon.ico HTTP/1.1" 404 2197
+[11/Oct/2019 12:35:50] "GET /login/ HTTP/1.1" 200 2880
+[11/Oct/2019 12:35:50] "GET /static/login/style.css HTTP/1.1" 304 0
+[11/Oct/2019 12:36:11] "GET /login/ HTTP/1.1" 200 2880
+[11/Oct/2019 12:36:14] "GET /login/ HTTP/1.1" 200 2880
+[11/Oct/2019 12:36:16] "GET /login/ HTTP/1.1" 200 2880
+[11/Oct/2019 12:36:19] "GET /login/register/ HTTP/1.1" 200 5348
+[11/Oct/2019 19:47:31] "GET /login/ HTTP/1.1" 200 2880
+[11/Oct/2019 19:47:31] "GET /static/login/style.css HTTP/1.1" 304 0
+Not Found: /favicon.ico
+[11/Oct/2019 19:47:31] "GET /favicon.ico HTTP/1.1" 404 2197
+[15/Oct/2019 09:47:39] "GET /login/ HTTP/1.1" 200 2880
+[15/Oct/2019 09:47:39] "GET /static/login/style.css HTTP/1.1" 200 178
+Not Found: /favicon.ico
+[15/Oct/2019 09:47:39] "GET /favicon.ico HTTP/1.1" 404 2197
+[15/Oct/2019 09:48:17] "GET /login/ HTTP/1.1" 200 2880
+[15/Oct/2019 09:48:24] "GET /login/register/ HTTP/1.1" 200 5348
+[15/Oct/2019 09:48:35] "GET /login/register/ HTTP/1.1" 200 5348
+[15/Oct/2019 10:26:09] "GET /login/ HTTP/1.1" 200 2880
+[15/Oct/2019 10:26:09] "GET /static/login/style.css HTTP/1.1" 200 178
+Not Found: /favicon.ico
+[15/Oct/2019 10:26:10] "GET /favicon.ico HTTP/1.1" 404 2197
+[15/Oct/2019 10:35:51] "GET /login/ HTTP/1.1" 200 2880
+[15/Oct/2019 10:35:57] "GET /login/ HTTP/1.1" 200 2880
+[15/Oct/2019 10:36:03] "GET /login/register/ HTTP/1.1" 200 5348
+[16/Oct/2019 21:16:11] "GET /login HTTP/1.1" 301 0
+[16/Oct/2019 21:16:12] "GET /login/ HTTP/1.1" 200 2880
+[16/Oct/2019 21:16:12] "GET /static/login/style.css HTTP/1.1" 200 178
+Not Found: /favicon.ico
+[16/Oct/2019 21:16:13] "GET /favicon.ico HTTP/1.1" 404 2197
+[17/Oct/2019 10:03:46] "GET /login/ HTTP/1.1" 200 2880
+[17/Oct/2019 10:03:46] "GET /static/login/style.css HTTP/1.1" 304 0
+Not Found: /favicon.ico
+[17/Oct/2019 10:03:47] "GET /favicon.ico HTTP/1.1" 404 2197
+[18/Oct/2019 08:58:29] "GET /login/ HTTP/1.1" 200 2880
+[18/Oct/2019 08:58:31] "GET /static/login/style.css HTTP/1.1" 304 0
+Not Found: /favicon.ico
+[18/Oct/2019 08:58:33] "GET /favicon.ico HTTP/1.1" 404 2197
+[18/Oct/2019 10:49:12] "GET /login/ HTTP/1.1" 200 2880
+[18/Oct/2019 10:49:13] "GET /static/login/style.css HTTP/1.1" 304 0
+Not Found: /favicon.ico
+[18/Oct/2019 10:49:13] "GET /favicon.ico HTTP/1.1" 404 2197
+Performing system checks...
+
+System check identified no issues (0 silenced).
+October 11, 2019 - 12:35:41
+Django version 2.2.6, using settings 'socialnet.settings'
+Starting development server at http://192.168.2.237:4380/
+Quit the server with CONTROL-C.

@@ -23,22 +23,23 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'w7zj5)r155myrr*=8bz#-&wv5n+ha(z%2l06=va963&6yhdv7*'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # python -m smtpd -n -c DebuggingServer localhost:1025
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = 1025
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#EMAIL_HOST = 'localhost'
+#EMAIL_PORT = 1025
 
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_HOST_USER = '****'
-# EMAIL_HOST_PASSWORD = '****'
-# EMAIL_USE_TLS = True
-# DEFAULT_FROM_EMAIL = '****'
+# Add admin gmail account
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'elliot.alderson2048@gmail.com'
+EMAIL_HOST_PASSWORD = 'fcs@Proj4&'
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = 'elliot.alderson2048@gmail.com'
 
 
 PHONENUMBER_DEFAULT_REGION = 'IN'
@@ -150,8 +151,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
-LOGOUT_REDIRECT_URL = 'http://127.0.0.1:8000/applogin/'
+LOGOUT_REDIRECT_URL = 'http://127.0.0.1:8000/login/'
