@@ -330,6 +330,13 @@ class UserProfileView(View):
             dob = commercial_user.date_of_birth
             gender = commerical_user.gender
             email = commercial_user.email
+
+        if gender==1:
+            gender = str("Male")
+        elif gender==2:
+            gender = str("Female")
+        elif gender==3:
+            gender = str("Transgender")
         
         bundle = {'First Name': fname, 'Last Name':lname, 'Date of Birth': dob, 'Gender':gender,'Email':email}
         return render(request, self.template_name, {'bundle': bundle})

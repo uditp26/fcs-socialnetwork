@@ -32,10 +32,13 @@ from django.views.decorators.cache import cache_control
 
 from django.conf import settings
 
-decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='https://192.168.2.237/login/')]
-
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
+
+import re
+
+decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='https://192.168.2.237/login/')]
+
 def decryptcipher(cipher, username):
     encObj = Encryption.objects.get(user= username)
     prvkey = encObj.privatekey
@@ -636,27 +639,30 @@ class CreatePagesFormView(View):
                 if form.is_valid():
                     title = form.cleaned_data['page_title']
                     description = form.cleaned_data['page_description']
-                
-                    #page_link 
-                
 
-                #form_class = CreatePagesDetailForm
-                #form = self.form_class(None)
-                url_generated = createrandomurl(title, username)
-                page_link = url_generated
-                pagesobject = Pages.objects.get(username=username)
-                pagesobject.title.append(title)
-                pagesobject.description.append(description)
-                pagesobject.page_link.append(page_link)
-                pagesobject.save()
+                    if re.match(r'[-a-zA-Z0-9_]+', title):
                 
-                # Create a public post for current user
-                # Here's a new page I've created:
-                # Page Title: <title>
-                # Author: <author>
-                # <link to page> <a href="{% url 'commercial_user:viewpage' bundle.username link %}"><title></a>
-                
-                return HttpResponseRedirect(reverse('commercial_user:createpage'))
+                        #page_link 
+
+                        #form_class = CreatePagesDetailForm
+                        #form = self.form_class(None)
+                        url_generated = createrandomurl(title, username)
+                        page_link = url_generated
+                        pagesobject = Pages.objects.get(username=username)
+                        pagesobject.title.append(title)
+                        pagesobject.description.append(description)
+                        pagesobject.page_link.append(page_link)
+                        pagesobject.save()
+                        
+                        # Create a public post for current user
+                        # Here's a new page I've created:
+                        # Page Title: <title>
+                        # Author: <author>
+                        # <link to page> <a href="{% url 'commercial_user:viewpage' bundle.username link %}"><title></a>
+                        
+                        return HttpResponseRedirect(reverse('commercial_user:createpage'))
+                    else:
+                        form.add_error('page_title', "You can only use letters, numbers, '-' and '_' for title.")
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
@@ -837,6 +843,13 @@ class UserProfileView(View):
                     dob = commercial_user.date_of_birth
                     gender = commerical_user.gender
                     email = commercial_user.email
+
+                if gender==1:
+                    gender = str("Male")
+                elif gender==2:
+                    gender = str("Female")
+                elif gender==3:
+                    gender = str("Transgender")
                 
                 bundle = {'First Name': fname, 'Last Name':lname, 'Date of Birth': dob, 'Gender':gender,'Email':email}
                 return render(request, self.template_name, {'bundle': bundle})
