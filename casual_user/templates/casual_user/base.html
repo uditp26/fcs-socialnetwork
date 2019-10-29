@@ -10,6 +10,9 @@
         <link rel="stylesheet" type="text/css" href="{% static 'login/style.css' %}"/>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+
+        {% block head %}
+        {% endblock %}
         
     </head>
     <body>
@@ -32,30 +35,51 @@
                                 <span class="glyphicon glyphicon-home" aria-hidden="true"></span>&nbsp; Home
                             </a>
                         </li>
+
+                       
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">&nbsp;<span class="glyphicon glyphicon-user"></span> Friend <span class="caret"></span></a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a href="{% url 'casual_user:friend' %}">Friend List</a>
+                                </li>
+
+                                <li>
+                                    <a href="{% url 'casual_user:friendrequest' %}">Friend Request</a>
+                                </li>
+                                
+                            </ul>
+                        </li>
                         
                         <li class="">
-                            <a href="{% url 'casual_user:friend' %}">
-                                <span class="glyphicon glyphicon-shopping-cart" aria-hidden="true"></span>&nbsp; Friends
-                            </a>
-                        </li>
-
-                        <li class="">
-                            <a href="#">
+                            <a href="{% url 'casual_user:inbox' %}">
                                 <span class="glyphicon glyphicon-comment" aria-hidden="true"></span>&nbsp; Messages
                             </a>
                         </li>
+                        
 
                         <li class="">
-                            <form class="navbar-form navbar-left" role="search" method="get" action="{% url 'casual_user:listuser' %}">
-                                <div class="form-group">
-                                    <input id = "search_username" type="text" class="form-control" name="q" value="">
-                                </div>
-                                <button id = "search_submit" type="submit" class="btn btn-default">Find Friends</button>
-                            </form>
+                            <a href="{% url 'casual_user:yourjoinedgroup' %}">
+                                <span class="glyphicon glyphicon-comment" aria-hidden="true"></span>&nbsp; Group
+                            </a>
                         </li>
+
                     </ul>                                       
         
                     <ul class="nav navbar-nav navbar-right">
+                        <form class="navbar-form navbar-left" role="search" method="get" action="{% url 'casual_user:listgroup' %}">
+                            <div class="form-group">
+                                <input id = "search_username" type="text" class="form-control" name="q" value="">
+                            </div>
+                            <button id = "search_submit" type="submit" class="btn btn-default">Find Groups</button>
+                        </form>
+
+                        <form class="navbar-form navbar-left" role="search" method="get" action="{% url 'casual_user:listuser' %}">
+                            <div class="form-group">
+                                <input id = "search_username" type="text" class="form-control" name="q" value="">
+                            </div>
+                            <button id = "search_submit" type="submit" class="btn btn-default">Find Friends</button>
+                        </form>
                         
                         <li class="dropdown">
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown">&nbsp;<span class="glyphicon glyphicon-user"></span> My Profile <span class="caret"></span></a>
@@ -76,8 +100,13 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="#">
+                                    <a href="{% url 'casual_user:settings' %}">
                                         <span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>&nbsp; Settings
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'casual_user:upgrade' %}">
+                                        <span class="glyphicon glyphicon-briefcase" aria-hidden="true"></span>&nbsp; Upgrade Account
                                     </a>
                                 </li>
                                 <li>

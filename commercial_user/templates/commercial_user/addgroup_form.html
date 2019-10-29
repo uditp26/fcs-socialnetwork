@@ -1,0 +1,43 @@
+{% extends 'commercial_user/base.html' %}
+{% block head %}
+	<link href="//cdn.bootcss.com/bootstrap-datetimepicker/4.17.44/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
+	<script src="//cdn.bootcss.com/moment.js/2.17.1/moment.min.js"></script>
+	<script src="//cdn.bootcss.com/bootstrap-datetimepicker/4.17.44/js/bootstrap-datetimepicker.min.js"></script>
+{% endblock %}
+
+{% block title %}Add group{% endblock %}
+
+{% block body %}
+
+<script>
+    $(function () {
+        $('.datetime-input').datetimepicker({
+            format:'YYYY-MM-DD'
+        });
+    });
+</script>
+
+<div style="padding-bottom: 20px">
+	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
+			<h1 style="text-indent: 15cm"><font color="white">Add group</font></h1>
+			<h4 style="text-indent: 15cm"><font color="white">Please fill up the form below</font></h4>
+	</div>
+</div>
+
+<div class = "container-fluid">
+    <div class="row">
+        <div class="col-sm-offset-3 col-sm-9">
+            <form class="form-horizontal" action="" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% include 'commercial_user/form-template.html'%}
+                <div class="form-group">
+                    <div class="col-sm-offset-3 col-sm-9">
+                        <button type="submit" class = "btn btn-success">Add group</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

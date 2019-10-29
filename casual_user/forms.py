@@ -16,9 +16,12 @@ class SendMoneyForm(forms.Form):
 
     def __init__(self, user, *args, **kwargs):
         super(SendMoneyForm, self).__init__(*args, **kwargs)
-        self.fields['send_to'] = forms.ChoiceField(
-            choices=[(friend, User.objects.get(username=friend).first_name + " " + User.objects.get(username=friend).last_name) for friend in Friend.objects.get(username=user).friend_list]
-        )
+        try:
+            self.fields['send_to'] = forms.ChoiceField(
+                choices=[(friend, User.objects.get(username=friend).first_name + " " + User.objects.get(username=friend).last_name) for friend in Friend.objects.get(username=user).friend_list]
+            )
+        except:
+            self.fields['send_to'] = forms.ChoiceField(choices=[])
 
     class Meta:
         # model
@@ -29,9 +32,12 @@ class RequestMoneyForm(forms.Form):
 
     def __init__(self, user, *args, **kwargs):
         super(RequestMoneyForm, self).__init__(*args, **kwargs)
-        self.fields['request_from'] = forms.ChoiceField(
-            choices=[(friend, User.objects.get(username=friend).first_name + " " + User.objects.get(username=friend).last_name) for friend in Friend.objects.get(username=user).friend_list]
-        )
+        try:
+            self.fields['request_from'] = forms.ChoiceField(
+                choices=[(friend, User.objects.get(username=friend).first_name + " " + User.objects.get(username=friend).last_name) for friend in Friend.objects.get(username=user).friend_list]
+            )
+        except:
+            self.fields['request_from'] = forms.ChoiceField(choices=[])
 
     class Meta:
         # model
@@ -41,10 +47,21 @@ class EditProfileForm(forms.Form):
     first_name = forms.CharField(max_length=50)
     last_name = forms.CharField(max_length=50)
     date_of_birth = forms.DateTimeField(widget=forms.TextInput(attrs={'class':'datetime-input'}))
-    gender = forms.ChoiceField(choices=[(1, 'Male'), (2, 'Female'), (3, 'Transgender')],
-    widget = forms.RadioSelect)
-    phone = PhoneNumberField(widget=forms.TextInput(), required=False)
+    phone = PhoneNumberField(widget=forms.TextInput())
     
     class Meta:
-        # model = User
-        fields = [ 'first_name', 'last_name', 'date_of_birth', 'gender', 'phone' ]
+        fields = [ 'first_name', 'last_name', 'date_of_birth', 'phone' ]
+
+class OTPVerificationForm(forms.Form):
+    otp = forms.CharField(max_length=4, widget=forms.TextInput(attrs={'class':'open-keyboard'}))
+
+    class Meta:
+        fields = ['otp']
+
+class SubscriptionForm(forms.Form):
+    subscription_plan = forms.ChoiceField(choices=[(1, 'Silver: Rs 50/month'), (2, 'Gold: Rs 100/month'), (3, 'Platinum: Rs 150/month')], widget = forms.RadioSelect)
+    amount = forms.FloatField(min_value=50)
+
+    class Meta:
+        # model
+        fields = ['subscription_plan', 'amount']

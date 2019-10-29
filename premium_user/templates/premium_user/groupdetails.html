@@ -1,0 +1,93 @@
+{% extends 'premium_user/base.html' %}
+
+{% block body %}
+
+<div style="padding-bottom: 1cm">
+	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
+        <h1 style="text-indent: 15cm"><font color="white">Your Group Details</font></h1>
+	</div>
+</div>
+
+<div class="container">
+    <div class="col-sm-offset-1 col-sm-8">
+    {% if bundle %}
+        {% for key, value in bundle.items %}
+            {% if key == 11 %}
+                {% if value %}  
+                    <table class="table table-striped table-bordered text-center">
+                        <thead>
+                            <tr>
+                                <th class="text-center text-uppercase">Group Name</th>
+                                <th class="text-center text-uppercase">Group Price</th>
+                                <th class="text-center text-uppercase">Group Members</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for key, temp2 in value.items %}
+                                {% for groupname, temp1 in temp2.items %}
+                                    {% for groupprice, m in temp1.items %}        
+                                        <tr>
+                                            <td>{{ groupname }}</td>
+                                            <td>{{ groupprice }}</td>
+                                            <td>{{ m }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% endfor %} 
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="card" style="padding: 1cm">
+                        <div class="card-header">
+                            <h2>You are not associated with any group.</h2>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+            {% if key == 12 %}
+                {% if value %}  
+                    <table class="table table-striped table-bordered text-center">
+                        <thead>
+                            <tr>
+                                <th class="text-center text-uppercase">Group Plan Days Left</th>
+                                <th class="text-center text-uppercase">Number of Group can form</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for days, noofgroup in value.items %}
+                                <tr>
+                                    <td>{{ days }}</td>
+                                    <td>{{ noofgroup }}</td>
+                                </tr> 
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="card" style="padding: 1cm">
+                        <div class="card-header">
+                            <h2>Please select any plan to create group.</h2>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <div class="card" style="padding: 1cm">
+            <div class="card-header">
+                <h2>You have not any group yet!</h2>
+            </div>
+        </div>
+    {% endif %}
+    </div>
+    <div class="col-lg-3">
+        <table class="table table-striped table-bordered text-center">
+            <tbody>
+                <!-- <tr><td><a href="{% url 'premium_user:groupplan' %}">Select Plan</a></td></tr> -->
+                <tr><td><a href="{% url 'premium_user:addgroup' %}">Add Group</a></td></tr>
+                <tr><td><a href="{% url 'premium_user:listrequest' %}">View Request</a></td></tr>
+                <tr><td><a href="{% url 'premium_user:deletegroup' %}">Delete Group</a></td></tr>
+            </tbody>
+        </table>
+    </div>
+</div> 
+{% endblock %}

@@ -23,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'w7zj5)r155myrr*=8bz#-&wv5n+ha(z%2l06=va963&6yhdv7*'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -34,6 +34,7 @@ ALLOWED_HOSTS = ['*']
 #EMAIL_PORT = 1025
 
 # Add admin gmail account
+
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'elliot.alderson2048@gmail.com'
@@ -55,7 +56,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'login.apps.LoginConfig',
     'casual_user.apps.CasualUserConfig',
+    'premium_user.apps.PremiumUserConfig',
+    'commercial_user.apps.CommercialUserConfig',
+    'axes',
 ]
+
+# SECURE_SSL_REDIRECT = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -65,6 +71,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'axes.middleware.AxesMiddleware',
 ]
 
 ROOT_URLCONF = 'socialnet.urls'
@@ -86,17 +93,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'socialnet.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/2.2/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#     }
-# }
 
 DATABASES = {
     'default': {
@@ -127,9 +123,10 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTHENTICATION_BACKENDS = (
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesBackend',
     'django.contrib.auth.backends.ModelBackend',
-)
+]
 
 AUTH_USER_MODEL = 'login.User'
 
@@ -156,4 +153,4 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
-LOGOUT_REDIRECT_URL = 'http://127.0.0.1:8000/login/'
+LOGOUT_REDIRECT_URL = 'https://192.168.2.237/login/'

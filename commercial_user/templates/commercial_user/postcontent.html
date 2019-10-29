@@ -1,0 +1,36 @@
+{% extends 'commercial_user/base.html' %}
+
+{% block body %}
+
+<div style="padding-bottom: 1cm">
+	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
+        <h1 style="text-indent: 15cm"><font color="white">Welcome {{ visitor }}</font></h1>
+        <h4 style="text-indent: 15cm"><font color="white">Post content below for {{ owner }}</font></h4>
+	</div>
+</div>
+
+<div class="container" style="padding: 2cm">
+
+    <div class="card bg-dark text-white" style="padding: 1cm">
+        <h4 class="card-title">Create Post</h4>
+        <div class="card-header">
+        </div>
+        <div class="card-body">
+            <form id="postForm" name="pform" method="POST">
+            {% csrf_token %}
+            <textarea name="postarea" rows="8" cols="80" form="postForm" placeholder="What's on your mind?" required></textarea>
+        </div>
+        <div class="card-footer">
+            <div class="container">
+                <label>Scope: </label>
+                <select name="level">
+                    <option value="0">Friends</option>
+                    <option value="1">Public</option>
+                </select>
+                <button type="submit" name="postButton">Post</button>
+            </div>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

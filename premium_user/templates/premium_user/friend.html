@@ -1,0 +1,48 @@
+{% extends 'premium_user/base.html' %}
+
+{% block body %}
+
+<div style="padding-bottom: 1cm">
+	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
+        <h1 style="text-indent: 15cm"><font color="white">Friend List </font></h1>
+       
+	</div>
+</div>
+
+<div class="container">
+    <div class="col-sm-offset-1 col-sm-10">
+        {% if current_user %}
+            <table class="table table-striped table-bordered text-center">
+                <thead>
+                    <tr>
+                        <th class="text-center text-uppercase">Name</th>
+                        <th class="text-center text-uppercase">Action</th>
+                    </tr>
+                </thead>
+                <tbody>     
+                    <form action="#" method="post"> 
+                        {% csrf_token %}
+                        
+                        {% for username, name, level in current_user %}
+                            <tr>
+                                <td><a href="{% url 'casual_user:userprofile' username %}">{{ name }}</a></td>
+                                {% if level == "1" %}
+                                    <td> <input type="submit" name= {{ username }} class="btn btn-success" value="Post on Timeline"/> &nbsp; <input type="submit" name= {{ username }} class="btn btn-danger" value="Unfriend" /> </td>
+                                {% else %}
+                                    <td> <input type="submit" name= {{ username }} class="btn btn-danger" value="Unfriend" /> </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </form>
+                </tbody>
+            </table>
+        {% else %}
+            <div class="card" style="padding: 1cm">
+                <div class="card-header">
+                    <h2>No friends added yet.</h2>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div> 
+{% endblock %}

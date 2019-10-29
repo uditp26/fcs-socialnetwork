@@ -1,0 +1,32 @@
+{% extends 'commercial_user/base.html' %}
+
+{% block body %}
+
+<div style="padding-bottom: 1cm">
+	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
+		<h1 style="text-indent: 15cm"><font color="white">User Details</font></h1>
+	</div>
+</div>
+
+<div class="container">
+    <div class="col-sm-offset-1 col-sm-8">
+        <table class="table table-striped table-bordered text-center">
+            <thead>
+                <tr>
+                    <th class="text-center text-uppercase">Stats</th>
+                    <th class="text-center text-uppercase">Detail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key, value in bundle.items %}
+                <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

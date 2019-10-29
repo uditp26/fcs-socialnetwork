@@ -1,0 +1,60 @@
+{% extends 'commercial_user/basepage.html' %}
+{% block title %}Add Money{% endblock %}
+
+{% block body %}
+
+<div>
+	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
+			<h1 style="text-indent: 15cm"><font color="white">Commercial User Subscription Status</font></h1>
+			{% if commercial_user.status == False %}
+			<h4 style="text-indent: 15cm"><font color="white">Please add amount and pay subscription fee if not paid.</font></h4>
+			{% endif %}			
+			<!--<h4 style="text-indent: 15cm"><font color="white">Enter amount</font></h4>-->
+	</div>
+</div>
+
+<div class="container">
+	<div class="col-sm-offset-1 col-sm-10">
+		<table class="table table-striped table-bordered text-center">
+			<thead>
+				<tr>
+					<th class="text-center text-uppercase">Field</th>
+					<th class="text-center text-uppercase">Detail</th>
+					
+				</tr>
+			</thead>
+			<tbody>
+			<form class="form-horizontal" action="" method="post" enctype="multipart/form-data">
+				<!--<form action="" method="post">--> 
+			{% csrf_token %}     
+				<tr>
+					<td>Add Amount</td>
+					
+					<td>{% include 'commercial_user/form-template2.html' %}(Current Balance: Rs. {{commercial_user.amount}}/-)</td>
+				{% if commercial_user.amount < 5000 and commercial_user.status == False %}	
+					<td> <input type="submit" name= "buttonid" class="btn btn-primary" value="Add-Money" /> </td>
+				{% endif %}
+				{% if commercial_user.status == False %}
+					<td> <input type="submit" name= "buttonid" class="btn btn-primary" value="Subscribe" /> </td>	
+				
+				{% endif %}
+				{% if commercial_user.status == True %}
+				
+				<td> <input type="submit" name= "buttonid" class="btn btn-primary" value="Subscribed" disabled/> </td>
+				{% endif %}
+			</form>
+			</tbody>
+		</table>
+	</div>
+</div> 
+{% if commercial_user.status == True %}
+<div class="container-fluid">
+		<div class="container-fluid" style="padding: 2cm">
+			You are already Subscribed as Commercial user.  
+			<a href="{% url 'commercial_user:homepage' %}"> Click here 
+			</a> to go to homepage.
+		</div>
+</div>
+{% endif %}
+
+{% endblock %}

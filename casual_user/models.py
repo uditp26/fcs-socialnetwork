@@ -13,13 +13,19 @@ class CasualUser(models.Model):
 
     def __str__(self):
         return self.email
+    
+    # def name_to_url(self):
+    #     name = str(self.email).split('@')[0]
+    #     return name
+    # def name_to_url(self):
+    #     return self.user
 
 class Post(models.Model):
     username = models.CharField(max_length=30)
-    private_posts = ArrayField(models.CharField(max_length=500))
     friends_posts = ArrayField(models.CharField(max_length=500))
-    prv_timestamp = ArrayField(models.DateTimeField())
+    public_posts = ArrayField(models.CharField(max_length=500))
     frnd_timestamp = ArrayField(models.DateTimeField())
+    pblc_timestamp = ArrayField(models.DateTimeField())
 
     def __str__(self):
         return self.username
@@ -30,6 +36,13 @@ class Friend(models.Model):
     
     def __str__(self):
         return self.username
+
+class FriendRequest(models.Model):
+    requestto = models.CharField(max_length=30)
+    requestfrom = ArrayField(models.CharField(max_length=50, null = True)) 
+    
+    def __str__(self):
+        return self.requestto
 
 class Wallet(models.Model):
     username = models.CharField(max_length=30)
@@ -58,3 +71,12 @@ class Transaction(models.Model):
 
     def __str__(self):
         return self.sender
+
+class Timeline(models.Model):
+    username = models.CharField(max_length=30)
+    level = models.SmallIntegerField(default=1)
+
+    def __str__(self):
+        return self.username
+
+

@@ -1,0 +1,57 @@
+{% extends 'casual_user/base.html' %}
+{% block title %}OTP Verification{% endblock %}
+
+{% block body %}
+
+	<link href="https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css" rel="stylesheet" type="text/css" />
+	<link rel="stylesheet" href="https://mottie.github.io/Keyboard/css/keyboard.css"/>
+
+	<script src="https://code.jquery.com/jquery-3.1.0.js"></script>
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+	<script src="https://mottie.github.io/Keyboard/js/jquery.keyboard.js"></script>
+
+<script>
+
+	$(function() {
+		$('.open-keyboard').keyboard({
+			layout: 'custom',
+			customLayout: {
+				'normal': ['1 2 3', '4 5 6', '7 8 9', '{b} 0 {a}'],
+			},
+			maxLength: 4,
+			validate: function(keyboard, value, isClosing){
+				var test = /^\d+$/.test(value);
+				if (!test && isClosing) {
+					alert('Please enter 4-digit numeric code only.');
+				}
+				return test;
+			}
+		})
+	});
+	
+</script>
+
+<div>
+	<div class="container-fluid" style=" height: 120px; background-color: darkblue">
+			<h1 style="text-indent: 15cm"><font color="white">OTP Verification</font></h1>
+			<h4 style="text-indent: 15cm"><font color="white">Enter OTP for completing transaction</font></h4>
+	</div>
+</div>
+
+<div class="container-fluid">
+	<form class="form-horizontal" action="" method="post" enctype="multipart/form-data">
+		{% csrf_token %}
+		<div class="container-fluid" style="padding: 2cm">
+			{% include 'casual_user/form-template.html' %}
+			<div class="form-group">
+				<div class="col-xs-offset-3 col-xs-1">
+					<button type="submit" class="btn btn-success">Send</button>
+				</div>
+			</div>
+		</div>
+	</form>
+</div>
+
+
+{% endblock %}
