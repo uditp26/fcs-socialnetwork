@@ -1,3 +1,6 @@
 from django.contrib import admin
+from .models import CommercialUser, Pages
 
-# Register your models here.
+admin.site.register(CommercialUser)
+admin.site.register(Pages)
+
