@@ -24,6 +24,10 @@ from django.utils.text import capfirst
 from django.utils.translation import gettext, gettext_lazy as _
 from phonenumber_field.formfields import PhoneNumberField
 
+import re
+
+regex = re.compile('^[a-z0-9\.]+@[a-z0-9\.]+$', re.UNICODE)
+
 UserModel = get_user_model()
 
 class LoginForm(forms.Form):
@@ -41,7 +45,7 @@ class RegistrationForm(forms.Form):
     gender = forms.ChoiceField(choices=[(1, 'Male'), (2, 'Female'), (3, 'Transgender')],
     widget = forms.RadioSelect)
     phone = PhoneNumberField(widget=forms.TextInput(), required=False)
-    email = forms.CharField(widget=forms.EmailInput)
+    email = forms.RegexField(max_length=50, regex=regex, help_text=("Required. 50 characters or fewer. Letters, digits and @/./ only."))
     password = forms.CharField(widget=forms.PasswordInput)
     account_type = forms.ChoiceField(choices=[(1, 'Casual'), (2, 'Premium'), (3, 'Commercial')],
     widget = forms.RadioSelect)
