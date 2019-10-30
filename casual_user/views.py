@@ -60,14 +60,17 @@ def get_user_info(current_user):
 
 def savePost(request, current_user, visitor=""):
     post = request.POST.dict()['postarea']
-    post = quote(str(post))
     scope = request.POST.dict()['level']
+
+    timestamp = timezone.now()
 
     if visitor != "":
         visitor = User.objects.get(username=visitor).first_name + " " + User.objects.get(username=visitor).last_name
-        post += " \t\t\t Posted By: " + str(visitor)
+        post += " \t\t\t Posted By: " + str(visitor) + " \t\t\t At: " + str(timestamp)
+    else:
+        full_name = User.objects.get(username=str(current_user)).first_name + " " + User.objects.get(username=str(current_user)).last_name
+        post += " \t\t\t Posted By: " + full_name + " \t\t\t At: " + str(timestamp)
 
-    timestamp = timezone.now()
     user_posts = Post.objects.filter(username = str(current_user))
 
     if len(user_posts) > 0:
