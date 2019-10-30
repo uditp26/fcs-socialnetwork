@@ -4,7 +4,7 @@ from django.http import Http404
 
 from .models import CasualUser, Post, Friend, Wallet, Request, Transaction, FriendRequest, Timeline
 from login.models import User
-from premium_user.models import AddGroup, GroupRequest, PremiumUser, Message, Group, Encryption
+from premium_user.models import AddGroup, GroupRequest, PremiumUser, Message, Group, Encryption, GroupPlan
 from commercial_user.models import CommercialUser
 
 from django.contrib import messages
@@ -561,7 +561,7 @@ def generateOTP():
 def sendOTP(request, email, subject):
     otp = generateOTP()
 
-    message = 'The one-time password for this transaction is: ' + otp + '. This otp is valid for 600 seconds only. Please enter the code for completing this transaction.'
+    message = 'The one-time password for this transaction is: ' + otp + '. This otp is valid for 180 seconds only. Please enter the code for completing this transaction.'
 
     # vulnerable!
     request.session['otp'] = otp
@@ -1236,6 +1236,7 @@ class OTPVerificationFormView(View):
         current_user = request.user
 
         form = self.form_class(request.POST)
+        current_date = datetime.now().date()
 
         if form.is_valid():
             otp = form.cleaned_data['otp']
@@ -1243,7 +1244,7 @@ class OTPVerificationFormView(View):
             try:
                 if request.session['otp'] != otp:
                     form.add_error('otp', 'Wrong OTP entered!')
-                elif time.time() > float(request.session['timer']) + 600:
+                elif time.time() > float(request.session['timer']) + 180:
                     form.add_error('otp', 'Timer expired!')
                 else: 
                     request.session.pop('otp', None)
@@ -1258,18 +1259,21 @@ class OTPVerificationFormView(View):
                         if  plan == "1":
                             amount = float(request.session['amountvalue'])
                             amount = amount - 50
+                            GroupPlan(customer = current_user.username, recharge_on = current_date, plantype = plan, noofgroup = 2).save()
                             t_amount = 50
                             # Add no. of groups the user can create here
                             flag = True
                         elif plan == "2":
                             amount = float(request.session['amountvalue'])
                             amount = amount - 100
+                            GroupPlan(customer = current_user.username, recharge_on = current_date, plantype = plan, noofgroup = 4).save()
                             t_amount = 100
                             # Add no. of groups the user can create here
                             flag = True
                         elif plan == "3":
                             amount = float(request.session['amountvalue'])
                             amount = amount - 150
+                            GroupPlan(customer = current_user.username, recharge_on = current_date, plantype = plan, noofgroup = sys.maxsize).save()
                             t_amount = 150
                             # Add no. of groups the user can create here
                             flag = True
