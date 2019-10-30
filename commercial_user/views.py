@@ -93,10 +93,10 @@ def savePost(request, current_user, visitor=""):
 
     if visitor != "":
         visitor = User.objects.get(username=visitor).first_name + " " + User.objects.get(username=visitor).last_name
-        post += " \t\t\t Posted By: " + str(visitor) + " \t\t\t At: " + str(timestamp)
+        post += " \t\t\t Posted By: " + str(visitor) + " \t\t\t At: " + time.strftime("%Y-%m-%d %H:%M")
     else:
         full_name = User.objects.get(username=str(current_user)).first_name + " " + User.objects.get(username=str(current_user)).last_name
-        post += " \t\t\t Posted By: " + full_name + " \t\t\t At: " + str(timestamp)
+        post += " \t\t\t Posted By: " + full_name + " \t\t\t At: " + time.strftime("%Y-%m-%d %H:%M")
 
     user_posts = Post.objects.filter(username = str(current_user))
 
@@ -837,7 +837,7 @@ class EditProfileFormView(View):
                     dob = form.cleaned_data['date_of_birth']
                     phone = form.cleaned_data['phone']
                     updateExistingUser(current_user, first_name, last_name, dob, phone)
-                    return HttpResponseRedirect('')
+                    return redirect('commercial_user:editprofile')
                 return render(request, self.template_name, {'form':form}) 
 
         elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet

@@ -83,6 +83,8 @@ UserModel = get_user_model()
 def createNewUser(email, password, first_name, last_name, u_type):
     username = email.split('@')[0]
 
+    username = username.replace('.', '-')
+
     # check for unique username
     similar_users = len(User.objects.filter(username=username))
 
