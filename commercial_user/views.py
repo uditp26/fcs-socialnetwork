@@ -839,7 +839,7 @@ class UserProfileView(View):
                 else:                           #commercial-user
                     commercial_user = CommercialUser.objects.get(user=user)
                     dob = commercial_user.date_of_birth
-                    gender = commerical_user.gender
+                    gender = commercial_user.gender
                     email = commercial_user.email
                 
                 bundle = {'First Name': fname, 'Last Name':lname, 'Date of Birth': dob, 'Gender':gender,'Email':email}
@@ -1267,7 +1267,7 @@ class ListGroupView(View):
                     try:
                         
                         if request.POST.dict()[str(keyl)] == "join":
-                            print("Button pressed : ", request.POST.dict()[str(keyl)])
+                            # print("Button pressed : ", request.POST.dict()[str(keyl)])
                             admin = groupadminusernamel; name = groupnamel
 
                             wallet = Wallet.objects.get(username=username)
@@ -1405,48 +1405,8 @@ class AddGroupFormView(View):
         current_user = request.user
         casual_user = CommercialUser.objects.get(user=current_user)
         if casual_user.statusofrequest == 2:
-            if casual_user.subscription_paid == True:
-                try:
-                    groupplanofuser = GroupPlan.objects.get(customer = username)
-                    noofgroup = groupplanofuser.noofgroup
-                    
-                    # Recharge validity check
-                    current_date = datetime.now().date()
-                    rechargedate = groupplanofuser.recharge_on.now().date()
-                    days = int((rechargedate - current_date).days)
-                    if days > 30:
-                        status = groupplanofuser.plantype
-                        if status == "1":
-                            groupplanofuser.noofgroup = 2
-                            groupplanofuser.recharge_on = current_date 
-                            groupplanofuser.save()
-                        elif status == "2":
-                            groupplanofuser.noofgroup = 4
-                            groupplanofuser.recharge_on = current_date
-                            groupplanofuser.save()
-                        elif status == "3":
-                            groupplanofuser.noofgroup = sys.maxsize
-                            groupplanofuser.recharge_on = current_date
-                            groupplanofuser.save()
-                        form = self.form_class(None)
-                        return render(request, self.template_name, {'form': form})
-
-                    if noofgroup > 0:
-                        #blank form added
-                        form = self.form_class(None)
-                        return render(request, self.template_name, {'form': form})
-                        
-                    else:
-                        name = current_user.first_name + ' ' + current_user.last_name
-                        bundle = dict(); errortype = 1
-                        bundle[errortype] = name
-                        return render(request, 'commercial_user/error.html', {'bundle': bundle})
-
-                except:
-                    name = current_user.first_name + ' ' + current_user.last_name
-                    bundle = dict(); errortype = 0
-                    bundle[errortype] = name
-                    return render(request, 'commercial_user/error.html', {'bundle': bundle})
+            if casual_user.subscription_paid == True:             
+                return render(request, self.template_name, {'form': form})                     
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
@@ -1470,24 +1430,47 @@ class AddGroupFormView(View):
                     gtype = form.cleaned_data['gtype']
                     price = form.cleaned_data['price']
 
-                    addgroup = AddGroup(admin=current_user.username, name=name, gtype=gtype, price=price)
-                    addgroup.members = []
-                    addgroup.members.append(current_user.username)
-                    addgroup.save()
-
-                    try:
-                        group = Group.objects.get(admin = current_user.username)
-                        group.group_list.append(addgroup.name)
-                        group.save()
-
-                    except:
-                        group = Group()
-                        group.admin = current_user.username
-                        group.group_list = []
-                        group.group_list.append(addgroup.name)
-                        group.save()
-
-                return render(request, self.template_name, {'form': form})
+                if not price:
+                    price = 0
+                if price < 0:
+                    form.add_error('price', "Only allowed positive number.")
+                    return render(request, self.template_name, {'form': form})
+                if price <= 0 and gtype == '2':
+                    form.add_error('price', "Have to put some amount for creating commercial group.")
+                    return render(request, self.template_name, {'form': form})
+                    
+                try:
+                    group= Group.objects.get(admin = current_user.username)
+                    grouplist = group.group_list
+                    if name in grouplist:
+                        form.add_error('name', "Group name already exist, Enter different group name.")
+                        return render(request, self.template_name, {'form': form})
+                except:
+                    pass
+                if int(gtype) == 1:
+                    price = 0
+                
+                addgroup = AddGroup(admin=current_user.username, name=name, gtype=gtype, price=price)
+                addgroup.members = []
+                addgroup.members.append(current_user.username)
+                addgroup.save()
+                groupplan = GroupPlan.objects.get(customer = current_user.username)
+                
+                groupplan.save()
+                
+                try:
+                    group = Group.objects.get(admin = current_user.username)
+                    group.group_list.append(addgroup.name)
+                    group.save()
+                except:
+                    group = Group()
+                    group.admin = current_user.username
+                    group.group_list = []
+                    group.group_list.append(addgroup.name)
+                    group.save()
+                
+                return HttpResponseRedirect(reverse('commercial_user:groupdetails'))
+        
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
@@ -1625,22 +1608,21 @@ class DeleteGroupView(View):
                 for group in bundle:
                     try:
                         if request.POST.dict()[str(group)] == "Delete":
+                            print("Selected day : ",request.POST.dict()[str(group)])
                             groupobj = Group.objects.get(admin = current_user.username)
                             groupobj.group_list.remove(group); groupobj.save()
                             addgroupObj = AddGroup.objects.get(admin = current_user.username, name = group)
                             addgroupObj.delete()
 
-                            groupplan = GroupPlan.objects.get(customer = username)
-                            groupplan.noofgroup += 1
-                            groupplan.save()
+                            
                             break
                     except:
                         pass
 
-                        bundle = listowngroup(current_user)
-                        return render(request, self.template_name, {'bundle': bundle})
-                    else:
-                        return redirect('commercial_user:addmoneytosubscribe')
+                bundle = listowngroup(current_user)
+                return render(request, self.template_name, {'bundle': bundle})
+            else:
+                return redirect('commercial_user:addmoneytosubscribe')
 
         elif c_user.statusofrequest == 3: #if not valid pan, then redirect to another page. Suggest user to sign
             #up for premium or casual user, and redirect to register page 
@@ -2207,6 +2189,14 @@ class Saveuser:
     username = ""
 usernameObj = Saveuser()
 
+def getfriendlist(username1):
+    try:
+        have_friend = Friend.objects.get(username = username1)
+        friendlist  = list(have_friend.friend_list)
+    except:
+        friendlist = []
+    return friendlist
+
 @method_decorator(decorators, name='dispatch')
 class InboxView(View):
     template_name = 'commercial_user/inbox.html'
@@ -2278,7 +2268,7 @@ def saveMessage(self, request, sender, receiver):
     except:
         print("ERROR IN PKI")
         pass
- 
+    
     if search_msg:
         getmessage = search_msg
         search_msg = ""
@@ -2302,14 +2292,16 @@ def showmessages(sender, receiver):
         messages1 = []
         msg = list(messagebundle1.messages)
         timestamp1 = list(messagebundle1.timestamp)
+        
         for i,j in zip(msg, timestamp1):
             msg11 = decryptcipher(i[2:-1], receiver)
+            # msg11 = i
             userObj = User.objects.get(username = sender)
             name = str(userObj.first_name) + " " + str(userObj.last_name)
             messagedec = "From : "+str(name)+", Message : "+str(msg11) + ' ,At : ' + str(j)
             collectmessage.append(messagedec)
-        messages1 = copy.deepcopy(collectmessage)
- 
+        messages1 = collectmessage
+        
     except:
         messages1 = []; timestamp1 = []; count += 1
         pass
@@ -2321,11 +2313,12 @@ def showmessages(sender, receiver):
         timestamp2 = list(messagebundle2.timestamp)
         for i,j in zip(msg,timestamp2):
             msg12 = decryptcipher(i[2:-1], sender)
+            # msg12 = i
             userObj = User.objects.get(username = receiver)
             name = str(userObj.first_name) + " " + str(userObj.last_name)
             messagedec = "From : "+str(name)+", Message : "+str(msg12) + ' ,At : ' + str(j)
             collectmessage.append(messagedec)
-        messages2 = copy.deepcopy(collectmessage)
+        messages2 = collectmessage
         
     except:
         messages2 = []; timestamp2 = []

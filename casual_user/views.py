@@ -32,6 +32,7 @@ decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True),
 
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
+
 def decryptcipher(cipher, username):
     encObj = Encryption.objects.get(user= username)
     prvkey = encObj.privatekey
@@ -1036,7 +1037,8 @@ def showmessages(sender, receiver):
         msg = list(messagebundle2.messages)
         timestamp2 = list(messagebundle2.timestamp)
         for i,j in zip(msg,timestamp2):
-            msg12 = decryptcipher(i[2:-1], sender)  
+            msg12 = decryptcipher(i[2:-1], sender) 
+            # msg12=i                      
             messagedec = "Message : "+str(msg12) + ' ,At : ' + str(j)
             collectmessage.append(messagedec)
         messages2 = copy.deepcopy(collectmessage)
@@ -1046,8 +1048,8 @@ def showmessages(sender, receiver):
         count += 1
         pass
     if count !=1:
-        messages = messages1 + messages2
-        timestamp = timestamp1 + timestamp2
+        messages = messages2
+        timestamp = timestamp2
         updatemessages = [x for _,x in sorted(zip(timestamp,messages), reverse= True)]
     else:
         updatemessages =  []

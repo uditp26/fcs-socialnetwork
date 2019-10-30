@@ -3,6 +3,7 @@ from django.views.generic import View
 from django.http import Http404
 
 from login.models import User
+from commercial_user.models import CommercialUser
 from .models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message, Encryption
 from casual_user.models import Wallet, Transaction, Request, Post, Friend, FriendRequest, CasualUser, Timeline
 from .forms import AddGroupForm, GroupPlanForm, AddMoneyForm, SendMoneyForm, RequestMoneyForm, EditProfileForm, OTPVerificationForm, SubscriptionForm
@@ -332,7 +333,7 @@ class UserProfileView(View):
         else:                           #commercial-user
             commercial_user = CommercialUser.objects.get(user=user)
             dob = commercial_user.date_of_birth
-            gender = commerical_user.gender
+            gender = commercial_user.gender
             email = commercial_user.email
         
         bundle = {'First Name': fname, 'Last Name':lname, 'Date of Birth': dob, 'Gender':gender,'Email':email}
@@ -695,9 +696,8 @@ class ListGroupView(View):
                             return HttpResponseRedirect(reverse('premium_user:listgroup'))
                         
                     else:
-                        #message.info NOT WORKING (but not a problem, code working fine)
+                        
                         messages.info(request, 'Please recharge.')
-                        # return render(request, self.template_name, {'bundle': bundle})
                         return HttpResponseRedirect(reverse('premium_user:listgroup'))
 
                 elif request.POST.dict()[str(keyl)] == "leave":
@@ -1523,9 +1523,13 @@ def showmessages(sender, receiver):
         timestamp1 = list(messagebundle1.timestamp)
         for i,j in zip(msg, timestamp1):
             msg11 = decryptcipher(i[2:-1], receiver)
+            # msg11 = i
+            print("SENDER : ",sender)
+            print("RECEIVER : ",receiver)
             userObj = User.objects.get(username = sender)
             name = str(userObj.first_name) + " " + str(userObj.last_name)
             messagedec = "From : "+str(name)+", Message : "+str(msg11) + ' ,At : ' + str(j)
+            print("HELLO")
             collectmessage.append(messagedec)
         messages1 = copy.deepcopy(collectmessage)
  
@@ -1540,6 +1544,7 @@ def showmessages(sender, receiver):
         timestamp2 = list(messagebundle2.timestamp)
         for i,j in zip(msg,timestamp2):
             msg12 = decryptcipher(i[2:-1], sender)
+            # msg12 = i
             userObj = User.objects.get(username = receiver)
             name = str(userObj.first_name) + " " + str(userObj.last_name)
             messagedec = "From : "+str(name)+", Message : "+str(msg12) + ' ,At : ' + str(j)
@@ -1568,6 +1573,8 @@ class ChatView(View):
             return HttpResponseRedirect(reverse('premium_user:subscription'))
         sender = current_user.username
         receiver = usernameObj.username
+        print("SENDER : ",sender)
+        print("RECEIVER : ",receiver)
         updatemessages = showmessages(sender, receiver)
         msg = {'updatemessages':updatemessages}
         return render(request, self.template_name, {'msg': msg})
