@@ -28,7 +28,7 @@
                         
                         {% for keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel in bundle %}
                             <tr>
-                                <td><a href="{% url 'casual_user:casualuserdetail' groupadminusernamel %}">{{ groupadminnamel }}</a></td>
+                                <td><a href="{% url 'casual_user:userprofile' groupadminusernamel %}">{{ groupadminnamel }}</a></td>
                                 <td>{{ groupnamel }}</td>
                                 <td>{{ grouppricel }}</td>
                                 <td>

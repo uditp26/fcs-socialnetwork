@@ -9,7 +9,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.http import HttpResponse
 from django import forms
-
+from datetime import datetime
+from datetime import date
 from django.contrib.auth import (
     REDIRECT_FIELD_NAME, get_user_model, login as auth_login,
     logout as auth_logout, update_session_auth_hash,
@@ -240,6 +241,8 @@ class RegistrationFormView(View):
                     Wallet(username=username, user_type=int(account_type), amount=0.0, transactions_left=10000).save()
                     Pages(username=username, title=[], description=[], page_link=[]).save()
                     Group(admin = username, group_list = []).save()
+                    current_date = datetime.now().date()
+                    GroupPlan(customer = username, recharge_on = current_date, plantype = 4, noofgroup = 10000).save()
                     return render(request, 'login/registrationsuccess.html', {'keyanduser': keyanduser})
             else:
                 form.add_error('email', 'A user is already registered with this email.')

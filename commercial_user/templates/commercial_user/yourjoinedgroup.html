@@ -29,7 +29,7 @@
                         
                         {% for key, adusername, adname, groupname, price, gmembers in bundle %}
                             <tr>
-                                <td><a href="{% url 'premium_user:premiumuserdetail' adusername %}">{{ adname }}</a></td>
+                                <td><a href="{% url 'commercial_user:userprofile' adusername %}">{{ adname }}</a></td>
                                 <td>{{ groupname }}</td>
                                 <td>{{ price }}</td>
                                 <td>{{ gmembers }}</td>

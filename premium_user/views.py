@@ -3,6 +3,7 @@ from django.views.generic import View
 from django.http import Http404
 
 from login.models import User
+from commercial_user.models import CommercialUser
 from .models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message, Encryption
 from casual_user.models import Wallet, Transaction, Request, Post, Friend, FriendRequest, CasualUser, Timeline
 from commercial_user.models import CommercialUser
@@ -24,7 +25,7 @@ import sys
 import time
 from django.core.mail import send_mail
 import hashlib
-
+import copy
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import cache_control
@@ -42,22 +43,32 @@ from cryptography.hazmat.primitives.asymmetric import padding
 
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='https://192.168.2.237/login/')]
 
-# from Crypto.PublicKey import RSA
-# from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
 def decryptcipher(cipher, username):
     encObj = Encryption.objects.get(user= username)
     prvkey = encObj.privatekey
     prvkey = prvkey.replace("\\n","\n")
-
     ciphertext_new = cipher.encode('utf-8')
     ciphertext_new = ciphertext_new.decode('unicode-escape').encode('ISO-8859-1')
-
+ 
     keyPriv = RSA.importKey(prvkey)
     cipher = Cipher_PKCS1_v1_5.new(keyPriv)
-
+ 
     decrypt_text = cipher.decrypt(ciphertext_new, None).decode()
-    print("decrypted msg->", decrypt_text)
     return decrypt_text
+ 
+def encryption(plain, username):
+    encObj = Encryption.objects.get(user= username)
+    pubkey1 = encObj.publickey
+    pubkey1 = pubkey1.replace("\\n","\n")
+    pubkey = pubkey1
+    msg = plain
+    keyPub = RSA.importKey(pubkey) 
+    cipher = Cipher_PKCS1_v1_5.new(keyPub)
+ 
+    cipher_text = cipher.encrypt(msg.encode()) 
+    return cipher_text
 
 def priceofplan(plantype):
     if plantype == 1:
@@ -83,12 +94,10 @@ def get_user_info(current_user):
 def savePost(request, current_user, visitor=""):
 
     post = request.POST.dict()['postarea']
+    post = quote(str(post))
+
     # call below function to decrypt(after package install)
-    try:
-        post =  decryptcipher(post, current_user) 
-    except:
-        print("ERROR IN PKI")
-        pass
+    
     scope = request.POST.dict()['level']
 
     if visitor != "":
@@ -329,7 +338,7 @@ class UserProfileView(View):
         else:                           #commercial-user
             commercial_user = CommercialUser.objects.get(user=user)
             dob = commercial_user.date_of_birth
-            gender = commerical_user.gender
+            gender = commercial_user.gender
             email = commercial_user.email
 
         if gender==1:
@@ -699,9 +708,8 @@ class ListGroupView(View):
                             return HttpResponseRedirect(reverse('premium_user:listgroup'))
                         
                     else:
-                        #message.info NOT WORKING (but not a problem, code working fine)
+                        
                         messages.info(request, 'Please recharge.')
-                        # return render(request, self.template_name, {'bundle': bundle})
                         return HttpResponseRedirect(reverse('premium_user:listgroup'))
 
                 elif request.POST.dict()[str(keyl)] == "leave":
@@ -1449,21 +1457,20 @@ def getfriendlist(username1):
 
 def saveMessage(self, request, sender, receiver):
     search_msg = request.POST.dict()['messagearea']
-    # call below function to decrypt(after package install)
-
+ 
     try:
-        search_msg =  decryptcipher(search_msg, current_user) 
+        search_msg = encryption(search_msg, receiver)
     except:
         print("ERROR IN PKI")
         pass
-
+ 
     if search_msg:
         getmessage = search_msg
         search_msg = ""
         time_stamp = timezone.now()
         userObj = User.objects.get(username = sender)
         sendername = str(userObj.first_name) + ' ' + str(userObj.last_name)
-        update_message = "From " + str(sendername)+" : "+ str(getmessage) + '\n'+ 'At : '+ str(time_stamp)
+        update_message =str(getmessage)
         try:
             user_message = Message.objects.get(sender = sender, receiver = receiver)
             user_message.messages.append(update_message)
@@ -1517,17 +1524,44 @@ class InboxView(View):
                 pass
         return redirect('premium_user:chat')
 
+
 def showmessages(sender, receiver):
     count = 0
     try:
         messagebundle1 = Message.objects.get(sender = sender, receiver = receiver)
-        messages1 = list(messagebundle1.messages);  timestamp1 = list(messagebundle1.timestamp)
+        collectmessage = []
+        messages1 = []
+        msg = list(messagebundle1.messages)
+        timestamp1 = list(messagebundle1.timestamp)
+        for i,j in zip(msg, timestamp1):
+            msg11 = decryptcipher(i[2:-1], receiver)
+            # msg11 = i
+            print("SENDER : ",sender)
+            print("RECEIVER : ",receiver)
+            userObj = User.objects.get(username = sender)
+            name = str(userObj.first_name) + " " + str(userObj.last_name)
+            messagedec = "From : "+str(name)+", Message : "+str(msg11) + ' ,At : ' + str(j)
+            print("HELLO")
+            collectmessage.append(messagedec)
+        messages1 = copy.deepcopy(collectmessage)
+ 
     except:
         messages1 = []; timestamp1 = []; count += 1
         pass
     try:
         messagebundle2 = Message.objects.get(sender = receiver, receiver = sender)
-        messages2 = list(messagebundle2.messages); timestamp2 = list(messagebundle2.timestamp)
+        collectmessage = []
+        messages2 = []
+        msg = list(messagebundle2.messages)
+        timestamp2 = list(messagebundle2.timestamp)
+        for i,j in zip(msg,timestamp2):
+            msg12 = decryptcipher(i[2:-1], sender)
+            # msg12 = i
+            userObj = User.objects.get(username = receiver)
+            name = str(userObj.first_name) + " " + str(userObj.last_name)
+            messagedec = "From : "+str(name)+", Message : "+str(msg12) + ' ,At : ' + str(j)
+            collectmessage.append(messagedec)
+        messages2 = copy.deepcopy(collectmessage)
         
     except:
         messages2 = []; timestamp2 = []
@@ -1540,7 +1574,7 @@ def showmessages(sender, receiver):
     else:
         updatemessages =  []
     return updatemessages
-
+ 
 @method_decorator(decorators, name='dispatch')
 class ChatView(View):
     template_name = 'premium_user/chat.html'
@@ -1551,6 +1585,8 @@ class ChatView(View):
             return HttpResponseRedirect(reverse('premium_user:subscription'))
         sender = current_user.username
         receiver = usernameObj.username
+        print("SENDER : ",sender)
+        print("RECEIVER : ",receiver)
         updatemessages = showmessages(sender, receiver)
         msg = {'updatemessages':updatemessages}
         return render(request, self.template_name, {'msg': msg})
