@@ -32,8 +32,8 @@ from django.views.decorators.cache import cache_control
 
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='http://127.0.0.1:8000/login/')]
 
-# from Crypto.PublicKey import RSA
-# from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
 def decryptcipher(cipher, username):
     encObj = Encryption.objects.get(user= username)
     prvkey = encObj.privatekey
@@ -2272,11 +2272,11 @@ class InboxView(View):
 def saveMessage(self, request, sender, receiver):
     search_msg = request.POST.dict()['messagearea']
  
-    # try:
-    #     search_msg = encryption(search_msg, receiver)
-    # except:
-    #     print("ERROR IN PKI")
-    #     pass
+    try:
+        search_msg = encryption(search_msg, receiver)
+    except:
+        print("ERROR IN PKI")
+        pass
     
     if search_msg:
         getmessage = search_msg
@@ -2303,8 +2303,8 @@ def showmessages(sender, receiver):
         timestamp1 = list(messagebundle1.timestamp)
         
         for i,j in zip(msg, timestamp1):
-            # msg11 = decryptcipher(i[2:-1], receiver)
-            msg11 = i
+            msg11 = decryptcipher(i[2:-1], receiver)
+            # msg11 = i
             userObj = User.objects.get(username = sender)
             name = str(userObj.first_name) + " " + str(userObj.last_name)
             messagedec = "From : "+str(name)+", Message : "+str(msg11) + ' ,At : ' + str(j)
@@ -2321,8 +2321,8 @@ def showmessages(sender, receiver):
         msg = list(messagebundle2.messages)
         timestamp2 = list(messagebundle2.timestamp)
         for i,j in zip(msg,timestamp2):
-            # msg12 = decryptcipher(i[2:-1], sender)
-            msg12 = i
+            msg12 = decryptcipher(i[2:-1], sender)
+            # msg12 = i
             userObj = User.objects.get(username = receiver)
             name = str(userObj.first_name) + " " + str(userObj.last_name)
             messagedec = "From : "+str(name)+", Message : "+str(msg12) + ' ,At : ' + str(j)
