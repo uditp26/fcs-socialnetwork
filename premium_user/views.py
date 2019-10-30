@@ -15,6 +15,9 @@ from django import forms
 
 from datetime import datetime
 from datetime import date
+import pytz
+from datetime import datetime
+# print(datetime.now(pytz.timezone('Asia/Kolkata')))
 
 from django.utils import timezone
 import pytz
@@ -40,8 +43,8 @@ from cryptography.hazmat.primitives.asymmetric import padding
 
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='http://127.0.0.1:8000/login/')]
 
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
+# from Crypto.PublicKey import RSA
+# from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
 def decryptcipher(cipher, username):
     encObj = Encryption.objects.get(user= username)
     prvkey = encObj.privatekey
@@ -76,7 +79,7 @@ def priceofplan(plantype):
         noofgroup = 4
     else:
         price = 150
-        noofgroup = sys.float_info.max      # stored as 10,000 in form/model field
+        noofgroup = 10000      # stored as 10,000 in form/model field
     return price, noofgroup
 
 def get_user_info(current_user):
@@ -89,12 +92,7 @@ def get_user_info(current_user):
     return login_user
 
 def savePost(request, current_user, visitor=""):
-
     post = request.POST.dict()['postarea']
-    post = quote(str(post))
-
-    # call below function to decrypt(after package install)
-    
     scope = request.POST.dict()['level']
 
     if visitor != "":
@@ -223,8 +221,19 @@ def getgroupdetails(current_user):
         groupplaninfo = {}
         current_date = datetime.now().date()
         rechargedate = groupplan.recharge_on.date()
-        days = 30 - int((current_date - rechargedate).days)
-        noofgroups = int(groupplan.noofgroup)
+        
+        groupPlan = GroupPlan.objects.get(customer = current_user.username)
+        print("GROUP PLAN : ",(groupPlan.plantype))
+        if groupPlan.plantype == "3":
+            days = 30 - int((current_date - rechargedate).days)
+            noofgroups = "Infinity"
+        elif groupPlan.plantype == "4":
+            days = 365 - int((current_date - rechargedate).days)
+            noofgroups = "Infinity"
+        else:
+            days = 30 - int((current_date - rechargedate).days)
+            noofgroups = int(groupplan.noofgroup)
+            
         groupplaninfo[days] = noofgroups
         bundle[anotherkey] = groupinfo; anotherkey += 1
         bundle[anotherkey] = groupplaninfo
@@ -601,7 +610,7 @@ def request_group(current_user, search_name):
                 keyl.append(key); groupadminusernamel.append(group_admin);groupadminnamel.append(name)
                 groupnamel.append(group_name), statusl.append(3), grouppricel.append(group_price)
                 key = key+1
-               
+                
                 #Assumption(group admin cannot formed two group of same name) 
                 group_name_list = group_name_list.exclude(admin = group_admin, name = group_name)
         except:
@@ -668,7 +677,7 @@ class ListGroupView(View):
             try:
                 
                 if request.POST.dict()[str(keyl)] == "join":
-                    print("Button pressed : ", request.POST.dict()[str(keyl)])
+                    
                     admin = groupadminusernamel; name = groupnamel
 
                     wallet = Wallet.objects.get(username=username)
@@ -684,8 +693,10 @@ class ListGroupView(View):
                             group.members.append(username); group.save()
                             #bundle update
                             statusl = 2
-                            # return render(request, self.template_name, {'bundle': bundle})
-                            return HttpResponseRedirect(reverse('premium_user:listgroup'))
+                            search_name = findGroup(request).lower()
+                            bundle = request_group(current_user, search_name)
+                            return redirect('premium_user:listgroup')
+                            # return HttpResponseRedirect(reverse('premium_user:listgroup'))
                         except:
                             group = GroupRequest()
                             group.admin = admin ; group.name = name
@@ -694,13 +705,16 @@ class ListGroupView(View):
                             group.members.append(username); group.save()
                             #bundle update
                             statusl = 2
-                            # return render(request, self.template_name, {'bundle': bundle})
-                            return HttpResponseRedirect(reverse('premium_user:listgroup'))
+                            search_name = findGroup(request).lower()
+                            bundle = request_group(current_user, search_name)
+                            return redirect('premium_user:listgroup')
+                            # return HttpResponseRedirect(reverse('premium_user:listgroup'))
                         
                     else:
                         
                         messages.info(request, 'Please recharge.')
-                        return HttpResponseRedirect(reverse('premium_user:listgroup'))
+                        return redirect('premium_user:listgroup')
+                        # return HttpResponseRedirect(reverse('premium_user:listgroup'))
 
                 elif request.POST.dict()[str(keyl)] == "leave":
                     admin = groupadminusernamel; name = groupnamel
@@ -708,12 +722,13 @@ class ListGroupView(View):
                     group.members.remove(username)
                     group.save()
                     statusl = 1
-                    # return render(request, self.template_name, {'bundle': bundle})
-                    return HttpResponseRedirect(reverse('premium_user:listgroup'))
+                    return redirect('premium_user:listgroup')
+                    # return HttpResponseRedirect(reverse('premium_user:listgroup'))
             except:
                 pass
-        return HttpResponseRedirect(reverse('premium_user:listgroup'))
-        # return render(request, self.template_name, {'bundle': bundle})
+        return redirect('premium_user:listgroup')
+        # return HttpResponseRedirect(reverse('premium_user:listgroup'))
+        
 
 @method_decorator(decorators, name='dispatch')
 class GroupPlanFormView(View):
@@ -1448,11 +1463,11 @@ def getfriendlist(username1):
 def saveMessage(self, request, sender, receiver):
     search_msg = request.POST.dict()['messagearea']
  
-    try:
-        search_msg = encryption(search_msg, receiver)
-    except:
-        print("ERROR IN PKI")
-        pass
+    # try:
+    #     search_msg = encryption(search_msg, receiver)
+    # except:
+    #     print("ERROR IN PKI")
+    #     pass
  
     if search_msg:
         getmessage = search_msg
@@ -1524,14 +1539,11 @@ def showmessages(sender, receiver):
         msg = list(messagebundle1.messages)
         timestamp1 = list(messagebundle1.timestamp)
         for i,j in zip(msg, timestamp1):
-            msg11 = decryptcipher(i[2:-1], receiver)
-            # msg11 = i
-            print("SENDER : ",sender)
-            print("RECEIVER : ",receiver)
+            # msg11 = decryptcipher(i[2:-1], receiver)
+            msg11 = i
             userObj = User.objects.get(username = sender)
             name = str(userObj.first_name) + " " + str(userObj.last_name)
             messagedec = "From : "+str(name)+", Message : "+str(msg11) + ' ,At : ' + str(j)
-            print("HELLO")
             collectmessage.append(messagedec)
         messages1 = copy.deepcopy(collectmessage)
  
@@ -1545,8 +1557,8 @@ def showmessages(sender, receiver):
         msg = list(messagebundle2.messages)
         timestamp2 = list(messagebundle2.timestamp)
         for i,j in zip(msg,timestamp2):
-            msg12 = decryptcipher(i[2:-1], sender)
-            # msg12 = i
+            # msg12 = decryptcipher(i[2:-1], sender)
+            msg12 = i
             userObj = User.objects.get(username = receiver)
             name = str(userObj.first_name) + " " + str(userObj.last_name)
             messagedec = "From : "+str(name)+", Message : "+str(msg12) + ' ,At : ' + str(j)
@@ -1575,8 +1587,6 @@ class ChatView(View):
             return HttpResponseRedirect(reverse('premium_user:subscription'))
         sender = current_user.username
         receiver = usernameObj.username
-        print("SENDER : ",sender)
-        print("RECEIVER : ",receiver)
         updatemessages = showmessages(sender, receiver)
         msg = {'updatemessages':updatemessages}
         return render(request, self.template_name, {'msg': msg})

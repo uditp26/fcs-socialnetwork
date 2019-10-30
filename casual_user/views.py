@@ -26,12 +26,11 @@ import hashlib
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import cache_control
-from urllib.parse import quote
 
 decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True), login_required(login_url='http://127.0.0.1:8000/login/')]
 
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
+# from Crypto.PublicKey import RSA
+# from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
 
 def decryptcipher(cipher, username):
     encObj = Encryption.objects.get(user= username)
@@ -46,7 +45,6 @@ def decryptcipher(cipher, username):
     decrypt_text = cipher.decrypt(ciphertext_new, None).decode()
     return decrypt_text
 
-
 def get_user_info(current_user):
     if current_user.user_type == 1:
         login_user = CasualUser.objects.get(user=current_user)
@@ -58,7 +56,6 @@ def get_user_info(current_user):
 
 def savePost(request, current_user, visitor=""):
     post = request.POST.dict()['postarea']
-    post = quote(str(post))
     scope = request.POST.dict()['level']
 
     if visitor != "":
@@ -150,7 +147,7 @@ class HomepageView(View):
 
     def get(self, request):
         current_user = request.user
-        if str(current_user) is 'AnonymousUser':
+        if str(current_user) is 'AnonymousUser' or current_user.user_type != 1:
             raise Http404
         else:
             bundle = genBundle(current_user)
@@ -159,7 +156,8 @@ class HomepageView(View):
     def post(self, request):
         current_user = request.user
         savePost(request, current_user)
-        return HttpResponseRedirect('')
+        # homepage
+        return HttpResponseRedirect(reverse('casual_user:homepage'))
 
 @method_decorator(decorators, name='dispatch')
 class ProfileView(View):
@@ -230,9 +228,6 @@ class UserProfileView(View):
         user = User.objects.get(username=username)
         fname = user.first_name
         lname = user.last_name
-        
-        print(user.user_type)
-        print(type(user.user_type))
 
         if user.user_type == 1:         # casual-user
             casual_user = CasualUser.objects.get(user=user)
@@ -484,13 +479,11 @@ class FriendView(View):
         return render(request, self.template_name, {'current_user': friends_zip})
 
     def post(self, request):
-        print(request.POST.dict())
         current_user = request.user
         username1 = current_user.username
         current_user_friendlist, have_friend = showfrndlist(username1)
 
         for i,j in current_user_friendlist:
-            print(request.POST.dict())
             try:
                 selected_user = i
 
@@ -805,7 +798,6 @@ class ListGroupView(View):
             try:
                 
                 if request.POST.dict()[str(keyl)] == "join":
-                    print("Button pressed : ", request.POST.dict()[str(keyl)])
                     admin = groupadminusernamel; name = groupnamel
 
                     wallet = Wallet.objects.get(username=username)
@@ -821,8 +813,8 @@ class ListGroupView(View):
                             group.members.append(username); group.save()
                             #bundle update
                             statusl = 2
-                            # return render(request, self.template_name, {'bundle': bundle})
-                            return HttpResponseRedirect(reverse('casual_user:listgroup'))
+                            return redirect('casual_user:listgroup')
+                            # return HttpResponseRedirect(reverse('casual_user:listgroup'))
                         except:
                             group = GroupRequest()
                             group.admin = admin ; group.name = name
@@ -831,14 +823,14 @@ class ListGroupView(View):
                             group.members.append(username); group.save()
                             #bundle update
                             statusl = 2
-                            # return render(request, self.template_name, {'bundle': bundle})
-                            return HttpResponseRedirect(reverse('casual_user:listgroup'))
+                            return redirect('casual_user:listgroup')
+                            # return HttpResponseRedirect(reverse('casual_user:listgroup'))
                         
                     else:
                         #message.info NOT WORKING (but not a problem, code working fine)
                         messages.info(request, 'Please recharge.')
-                        # return render(request, self.template_name, {'bundle': bundle})
-                        return HttpResponseRedirect(reverse('casual_user:listgroup'))
+                        return redirect('casual_user:listgroup')
+                        # return HttpResponseRedirect(reverse('casual_user:listgroup'))
 
                 elif request.POST.dict()[str(keyl)] == "leave":
                     admin = groupadminusernamel; name = groupnamel
@@ -846,12 +838,12 @@ class ListGroupView(View):
                     group.members.remove(username)
                     group.save()
                     statusl = 1
-                    # return render(request, self.template_name, {'bundle': bundle})
-                    return HttpResponseRedirect(reverse('casual_user:listgroup'))
+                    return redirect('casual_user:listgroup')
+                    # return HttpResponseRedirect(reverse('casual_user:listgroup'))
             except:
                 pass
-        return HttpResponseRedirect(reverse('casual_user:listgroup'))
-        # return render(request, self.template_name, {'bundle': bundle})
+        return redirect('casual_user:listgroup')
+        # return HttpResponseRedirect(reverse('casual_user:listgroup'))
 
 def listjoinedgroup(current_user):
     addgroup = AddGroup.objects.all()
@@ -1038,8 +1030,8 @@ def showmessages(sender, receiver):
         msg = list(messagebundle2.messages)
         timestamp2 = list(messagebundle2.timestamp)
         for i,j in zip(msg,timestamp2):
-            msg12 = decryptcipher(i[2:-1], sender) 
-            # msg12=i                      
+            # msg12 = decryptcipher(i[2:-1], sender) 
+            msg12=i                      
             messagedec = "Message : "+str(msg12) + ' ,At : ' + str(j)
             collectmessage.append(messagedec)
         messages2 = copy.deepcopy(collectmessage)
