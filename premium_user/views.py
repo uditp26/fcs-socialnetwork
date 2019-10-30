@@ -91,6 +91,8 @@ def get_user_info(current_user):
 def savePost(request, current_user, visitor=""):
 
     post = request.POST.dict()['postarea']
+    post = quote(str(post))
+
     # call below function to decrypt(after package install)
     
     scope = request.POST.dict()['level']

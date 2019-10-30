@@ -82,6 +82,7 @@ def get_user_info(current_user):
 
 def savePost(request, current_user, visitor=""):
     post = request.POST.dict()['postarea']
+    post = quote(str(post))
     scope = request.POST.dict()['level']
 
     if visitor != "":
