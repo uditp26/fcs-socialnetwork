@@ -2236,6 +2236,7 @@ def getalluserlist(username1):
             allusername.append(i.username)
     except:
         allusername = []
+    
     return allusername
 
 class Saveuser:
@@ -2250,6 +2251,8 @@ def getfriendlist(username1):
         friendlist = []
     return friendlist
 
+
+
 @method_decorator(decorators, name='dispatch')
 class InboxView(View):
     template_name = 'commercial_user/inbox.html'
@@ -2262,7 +2265,7 @@ class InboxView(View):
                 username1 = current_user.username
                 friendlist = getalluserlist(username1)
                 current_user = dict()
-                    
+                   
                 userinfo=dict()
                 if friendlist:
                     uname = []
@@ -2334,6 +2337,9 @@ def saveMessage(self, request, sender, receiver):
         getmessage = search_msg
         search_msg = ""
         time_stamp = timezone.now()
+        
+        print("TIME_STAMP : ", time_stamp)
+
         userObj = User.objects.get(username = sender)
         sendername = str(userObj.first_name) + ' ' + str(userObj.last_name)
         update_message =str(getmessage)
@@ -2449,10 +2455,11 @@ class PostContentView(View):
         if c_user.statusofrequest == 2:
             if c_user.subscription_paid == True:
                 owner = request.session.get('owner')
+                level = Timeline.objects.get(username=owner).level
                 owner = User.objects.get(username=owner).first_name + " " + User.objects.get(username=owner).last_name
                 visitor = request.user
                 visitor = User.objects.get(username=visitor).first_name + " " + User.objects.get(username=visitor).last_name
-                return render(request, self.template_name, {'owner':owner, 'visitor':visitor})
+                return render(request, self.template_name, {'owner':owner, 'visitor':visitor, 'level':level})
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 

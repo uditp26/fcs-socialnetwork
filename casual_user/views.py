@@ -957,10 +957,11 @@ class PostContentView(View):
 
     def get(self, request):
         owner = request.session.get('owner')
+        level = Timeline.objects.get(username=owner).level
         owner = User.objects.get(username=owner).first_name + " " + User.objects.get(username=owner).last_name
         visitor = request.user
         visitor = User.objects.get(username=visitor).first_name + " " + User.objects.get(username=visitor).last_name
-        return render(request, self.template_name, {'owner':owner, 'visitor':visitor})
+        return render(request, self.template_name, {'owner':owner, 'visitor':visitor, 'level':level})
 
     def post(self, request):
         owner = request.session.get('owner')
@@ -993,6 +994,56 @@ def getfriendlist(username1):
 class Saveuser:
     username = ""
 usernameObj = Saveuser() 
+
+
+
+def getallmessage(current_user):
+    count = 0
+    try:
+        messagebundle = Message.objects.filter(receiver = current_user.username)
+
+        msgreceived = []; timestamp = []
+        for messagebundle1 in messagebundle:
+            collectmessage = []
+            messages1 = []
+            sender = messagebundle1.sender
+            msg = list(messagebundle1.messages); timestamp1 = list(messagebundle1.timestamp)
+            
+            
+            for i,j in zip(msg, timestamp1):
+                msg11 = decryptcipher(i[2:-1], current_user.username)
+                # msg11 = i
+                userObj = User.objects.get(username = sender)
+                name = str(userObj.first_name) + " " + str(userObj.last_name)
+                messagedec = "From : "+str(name)+", Message : "+str(msg11) + ' ,At : ' + str(j)
+                collectmessage.append(messagedec)
+            messages1 = copy.deepcopy(collectmessage)
+            msgreceived.extend(messages1);             timestamp.extend(timestamp1)
+ 
+    except:
+        msgreceived = []; timestamp = []; count += 1
+        pass
+    
+    if count != 1:
+        messages = msgreceived
+        timestamp = timestamp
+        updatemessages = [x for _,x in sorted(zip(timestamp,messages), reverse= True)]
+    else:
+        updatemessages =  []
+    return updatemessages
+
+@method_decorator(decorators, name='dispatch')
+class CasualMessages(View):
+    template_name = 'casual_user/commercialmessage.html'
+
+    def get(self, request):
+        current_user = request.user
+        
+        updatemessages = getallmessage(current_user)
+        msg = {'updatemessages':updatemessages}
+
+        return render(request, self.template_name, {'msg': msg})
+
 
 @method_decorator(decorators, name='dispatch')
 class InboxView(View):
@@ -1287,6 +1338,7 @@ class OTPVerificationFormView(View):
                             request.session.modified = True
 
                             w_dict = dict() 
+
 
                             w_dict['Account Type'] = sender_wallet.user_type
                             w_dict['Amount'] = sender_wallet.amount

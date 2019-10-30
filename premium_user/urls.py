@@ -39,7 +39,8 @@ urlpatterns = [
     #message
     url(r'inbox/$', views.InboxView.as_view(), name="inbox"),
     url(r'chat/$', views.ChatView.as_view(), name="chat"),
-
+    url(r'viewallmsg/$', views.CommercialMessage.as_view(), name="viewallmsg"),
+    
     # settings
     url(r'settings/$', views.SettingsView.as_view(), name="settings"),
 
