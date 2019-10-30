@@ -2449,10 +2449,11 @@ class PostContentView(View):
         if c_user.statusofrequest == 2:
             if c_user.subscription_paid == True:
                 owner = request.session.get('owner')
+                level = Timeline.objects.get(username=owner).level
                 owner = User.objects.get(username=owner).first_name + " " + User.objects.get(username=owner).last_name
                 visitor = request.user
                 visitor = User.objects.get(username=visitor).first_name + " " + User.objects.get(username=visitor).last_name
-                return render(request, self.template_name, {'owner':owner, 'visitor':visitor})
+                return render(request, self.template_name, {'owner':owner, 'visitor':visitor, 'level':level})
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 

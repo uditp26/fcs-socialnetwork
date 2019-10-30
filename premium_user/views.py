@@ -1621,10 +1621,11 @@ class PostContentView(View):
         if PremiumUser.objects.get(user=request.user).subscription == 0:
             return HttpResponseRedirect(reverse('premium_user:subscription'))
         owner = request.session.get('owner')
+        level = Timeline.objects.get(username=owner).level
         owner = User.objects.get(username=owner).first_name + " " + User.objects.get(username=owner).last_name
         visitor = request.user
         visitor = User.objects.get(username=visitor).first_name + " " + User.objects.get(username=visitor).last_name
-        return render(request, self.template_name, {'owner':owner, 'visitor':visitor})
+        return render(request, self.template_name, {'owner':owner, 'visitor':visitor, 'level':level})
 
     def post(self, request):
         owner = request.session.get('owner')
