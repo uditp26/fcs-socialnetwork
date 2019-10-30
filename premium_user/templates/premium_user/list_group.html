@@ -9,6 +9,7 @@
 </div>
 
 
+
 <div class="container">
         <div class="col-sm-offset-1 col-sm-8">
         {% if bundle %}
@@ -24,11 +25,9 @@
                 <tbody>
                     <form action="#" method="post"> 
                         {% csrf_token %}
-
-                        
                         {% for keyl, groupadminusernamel, groupadminnamel, groupnamel, statusl, grouppricel in bundle %}
                             <tr>
-                                <td><a href="{% url 'premium_user:premiumuserdetail' groupadminusernamel %}">{{ groupadminnamel }}</a></td>
+                                <td><a href="{% url 'premium_user:userprofile' groupadminusernamel %}">{{ groupadminnamel }}</a></td>
                                 <td>{{ groupnamel }}</td>
                                 <td>{{ grouppricel }}</td>
                                 <td>

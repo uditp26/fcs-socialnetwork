@@ -13,9 +13,7 @@
 		<div class="col-lg-offset-2 col-sm-10" style="padding: 20px">
 			{% for username, pubkey in keyanduser.items %}
 				<h4>Registration successful. Your username is {{ username }}.</h4>
-				<h4>Your Public key is below : </h4>
-				<h4>{{ pubkey }}</h4>
-				<h4>Please securely save it.</h4> 
+ 
 				<h4>Click here to <a href="{% url 'login:login' %}">login.</a></h4>
 			{% endfor %}
 			</div>
