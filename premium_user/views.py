@@ -1104,7 +1104,7 @@ def generateOTP():
 def sendOTP(request, email, subject):
     otp = generateOTP()
 
-    message = 'The one-time password for this transaction is: ' + otp + '. This otp is valid for 600 seconds only. Please enter the code for completing this transaction.'
+    message = 'The one-time password for this transaction is: ' + otp + '. This otp is valid for 180 seconds only. Please enter the code for completing this transaction.'
 
     # vulnerable!
     request.session['otp'] = otp
@@ -1331,7 +1331,7 @@ class OTPVerificationFormView(View):
             try:
                 if request.session['otp'] != otp:
                     form.add_error('otp', 'Wrong OTP entered!')
-                elif time.time() > float(request.session['timer']) + 600:
+                elif time.time() > float(request.session['timer']) + 180:
                     form.add_error('otp', 'Timer expired!')
                 else: 
                     request.session.pop('otp', None)
