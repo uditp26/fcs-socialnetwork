@@ -472,7 +472,7 @@ class HomepageView(View):
         c_user = CommercialUser.objects.get(user=current_user)
         if c_user.statusofrequest == 2:
             if c_user.subscription_paid == True:
-                savePost(self, request, current_user)
+                savePost(request, current_user)
                 return redirect('commercial_user:homepage')
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
