@@ -931,6 +931,7 @@ def user_friendlist(current_user, request):
 
     user_name_list = User.objects.filter(first_name__icontains = search_name)
     user_name_list = user_name_list.exclude(username = current_user.username)
+    user_name_list = user_name_list.exclude(username=settings.ADMIN_USERNAME)
 
     bundle = dict()
     if user_name_list:
@@ -2230,6 +2231,7 @@ def getalluserlist(username1):
         allusername = []
         all_user = User.objects.all()
         all_user = all_user.exclude(username = str(username1))
+        all_user = all_user.exclude(username=settings.ADMIN_USERNAME)
         for i in all_user:
             allusername.append(i.username)
     except:
