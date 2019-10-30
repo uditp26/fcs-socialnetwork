@@ -26,7 +26,6 @@ import hashlib
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import cache_control
-from urllib.parse import quote
 
 from django.conf import settings
 
@@ -47,7 +46,6 @@ def decryptcipher(cipher, username):
  
     decrypt_text = cipher.decrypt(ciphertext_new, None).decode()
     return decrypt_text
-
 
 def get_user_info(current_user):
     if current_user.user_type == 1:
@@ -155,7 +153,7 @@ class HomepageView(View):
 
     def get(self, request):
         current_user = request.user
-        if str(current_user) is 'AnonymousUser':
+        if str(current_user) is 'AnonymousUser' or current_user.user_type != 1:
             raise Http404
         else:
             bundle = genBundle(current_user)
@@ -235,9 +233,6 @@ class UserProfileView(View):
         user = User.objects.get(username=username)
         fname = user.first_name
         lname = user.last_name
-        
-        print(user.user_type)
-        print(type(user.user_type))
 
         if user.user_type == 1:         # casual-user
             casual_user = CasualUser.objects.get(user=user)
@@ -495,13 +490,11 @@ class FriendView(View):
         return render(request, self.template_name, {'current_user': friends_zip})
 
     def post(self, request):
-        print(request.POST.dict())
         current_user = request.user
         username1 = current_user.username
         current_user_friendlist, have_friend = showfrndlist(username1)
 
         for i,j in current_user_friendlist:
-            print(request.POST.dict())
             try:
                 selected_user = i
 
@@ -816,7 +809,6 @@ class ListGroupView(View):
             try:
                 
                 if request.POST.dict()[str(keyl)] == "join":
-                    print("Button pressed : ", request.POST.dict()[str(keyl)])
                     admin = groupadminusernamel; name = groupnamel
 
                     wallet = Wallet.objects.get(username=username)
@@ -832,8 +824,8 @@ class ListGroupView(View):
                             group.members.append(username); group.save()
                             #bundle update
                             statusl = 2
-                            # return render(request, self.template_name, {'bundle': bundle})
-                            return HttpResponseRedirect(reverse('casual_user:listgroup'))
+                            return redirect('casual_user:listgroup')
+                            # return HttpResponseRedirect(reverse('casual_user:listgroup'))
                         except:
                             group = GroupRequest()
                             group.admin = admin ; group.name = name
@@ -842,14 +834,14 @@ class ListGroupView(View):
                             group.members.append(username); group.save()
                             #bundle update
                             statusl = 2
-                            # return render(request, self.template_name, {'bundle': bundle})
-                            return HttpResponseRedirect(reverse('casual_user:listgroup'))
+                            return redirect('casual_user:listgroup')
+                            # return HttpResponseRedirect(reverse('casual_user:listgroup'))
                         
                     else:
                         #message.info NOT WORKING (but not a problem, code working fine)
                         messages.info(request, 'Please recharge.')
-                        # return render(request, self.template_name, {'bundle': bundle})
-                        return HttpResponseRedirect(reverse('casual_user:listgroup'))
+                        return redirect('casual_user:listgroup')
+                        # return HttpResponseRedirect(reverse('casual_user:listgroup'))
 
                 elif request.POST.dict()[str(keyl)] == "leave":
                     admin = groupadminusernamel; name = groupnamel
@@ -857,12 +849,12 @@ class ListGroupView(View):
                     group.members.remove(username)
                     group.save()
                     statusl = 1
-                    # return render(request, self.template_name, {'bundle': bundle})
-                    return HttpResponseRedirect(reverse('casual_user:listgroup'))
+                    return redirect('casual_user:listgroup')
+                    # return HttpResponseRedirect(reverse('casual_user:listgroup'))
             except:
                 pass
-        return HttpResponseRedirect(reverse('casual_user:listgroup'))
-        # return render(request, self.template_name, {'bundle': bundle})
+        return redirect('casual_user:listgroup')
+        # return HttpResponseRedirect(reverse('casual_user:listgroup'))
 
 def listjoinedgroup(current_user):
     addgroup = AddGroup.objects.all()
