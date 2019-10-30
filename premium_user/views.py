@@ -391,6 +391,7 @@ def user_friendlist(current_user, request):
 
     user_name_list = User.objects.filter(first_name__icontains = search_name)
     user_name_list = user_name_list.exclude(username = current_user.username)
+    user_name_list = user_name_list.exclude(username=settings.ADMIN_USERNAME)
 
     bundle = dict()
     if user_name_list:

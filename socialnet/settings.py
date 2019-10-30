@@ -42,6 +42,8 @@ EMAIL_HOST_PASSWORD = 'fcs@Proj4&'
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = 'elliot.alderson2048@gmail.com'
 
+ADMIN_USERNAME = "elliot_alderson"
+
 
 PHONENUMBER_DEFAULT_REGION = 'IN'
 
