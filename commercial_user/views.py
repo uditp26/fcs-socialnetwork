@@ -2188,10 +2188,12 @@ def getalluserlist(username1):
     try:
         allusername = []
         all_user = User.objects.all()
+        all_user = all_user.exclude(username = str(username1))
         for i in all_user:
             allusername.append(i.username)
     except:
         allusername = []
+    
     return allusername
 
 class Saveuser:
@@ -2206,6 +2208,8 @@ def getfriendlist(username1):
         friendlist = []
     return friendlist
 
+
+
 @method_decorator(decorators, name='dispatch')
 class InboxView(View):
     template_name = 'commercial_user/inbox.html'
@@ -2216,9 +2220,9 @@ class InboxView(View):
         if c_user.statusofrequest == 2:
             if c_user.subscription_paid == True:
                 username1 = current_user.username
-                friendlist = getfriendlist(username1)
+                friendlist = getalluserlist(username1)
                 current_user = dict()
-                    
+                   
                 userinfo=dict()
                 if friendlist:
                     uname = []
@@ -2248,7 +2252,7 @@ class InboxView(View):
         if c_user.statusofrequest == 2:
             if c_user.subscription_paid == True:
                 username1 = current_user.username
-                friendlist = getfriendlist(username1)
+                friendlist = getalluserlist(username1)
                 
                 for i in friendlist:
                     try:
@@ -2281,7 +2285,10 @@ def saveMessage(self, request, sender, receiver):
     if search_msg:
         getmessage = search_msg
         search_msg = ""
-        time_stamp = timezone.now()
+        # time_stamp = timezone.now()
+        time_stamp = datetime.now(pytz.timezone('Asia/Kolkata'))
+        print("TIME_STAMP : ", time_stamp)
+
         userObj = User.objects.get(username = sender)
         sendername = str(userObj.first_name) + ' ' + str(userObj.last_name)
         update_message =str(getmessage)

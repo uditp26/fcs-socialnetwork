@@ -2,6 +2,8 @@ from django.shortcuts import render, reverse, redirect
 from django.views.generic import View
 from django.http import Http404
 
+
+from django.conf import settings
 from login.models import User
 from commercial_user.models import CommercialUser
 from .models import PremiumUser, AddGroup, Group, GroupRequest, GroupPlan, Message, Encryption
@@ -45,6 +47,7 @@ decorators = [cache_control(no_cache=True, must_revalidate=True, no_store=True),
 
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
+
 def decryptcipher(cipher, username):
     encObj = Encryption.objects.get(user= username)
     prvkey = encObj.privatekey
@@ -1472,7 +1475,8 @@ def saveMessage(self, request, sender, receiver):
     if search_msg:
         getmessage = search_msg
         search_msg = ""
-        time_stamp = timezone.now()
+        # time_stamp = timezone.now()
+        time_stamp = datetime.now(pytz.timezone('Asia/Kolkata'))
         userObj = User.objects.get(username = sender)
         sendername = str(userObj.first_name) + ' ' + str(userObj.last_name)
         update_message =str(getmessage)
@@ -1488,6 +1492,53 @@ class Saveuser:
     username = ""
 usernameObj = Saveuser() 
 
+def getallmessage(current_user):
+    count = 0
+    try:
+        messagebundle = Message.objects.filter(receiver = current_user.username)
+
+        msgreceived = []; timestamp = []
+        for messagebundle1 in messagebundle:
+            collectmessage = []
+            messages1 = []
+            sender = messagebundle1.sender
+            msg = list(messagebundle1.messages); timestamp1 = list(messagebundle1.timestamp)
+            
+            
+            for i,j in zip(msg, timestamp1):
+                msg11 = decryptcipher(i[2:-1], current_user.username)
+                # msg11 = i
+                userObj = User.objects.get(username = sender)
+                name = str(userObj.first_name) + " " + str(userObj.last_name)
+                messagedec = "From : "+str(name)+", Message : "+str(msg11) + ' ,At : ' + str(j)
+                collectmessage.append(messagedec)
+            messages1 = copy.deepcopy(collectmessage)
+            msgreceived.extend(messages1);             timestamp.extend(timestamp1)
+ 
+    except:
+        msgreceived = []; timestamp = []; count += 1
+        pass
+    
+    if count != 1:
+        messages = msgreceived
+        timestamp = timestamp
+        updatemessages = [x for _,x in sorted(zip(timestamp,messages), reverse= True)]
+    else:
+        updatemessages =  []
+    return updatemessages
+
+@method_decorator(decorators, name='dispatch')
+class CommercialMessage(View):
+    template_name = 'premium_user/commercialmessage.html'
+
+    def get(self, request):
+        current_user = request.user
+        
+        updatemessages = getallmessage(current_user)
+        msg = {'updatemessages':updatemessages}
+
+        print("Messages Commercial Messages : ", msg)
+        return render(request, self.template_name, {'msg': msg})
 
 @method_decorator(decorators, name='dispatch')
 class InboxView(View):
