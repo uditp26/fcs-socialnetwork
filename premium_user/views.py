@@ -1475,8 +1475,7 @@ def saveMessage(self, request, sender, receiver):
     if search_msg:
         getmessage = search_msg
         search_msg = ""
-        # time_stamp = timezone.now()
-        time_stamp = datetime.now(pytz.timezone('Asia/Kolkata'))
+        time_stamp = timezone.now()
         userObj = User.objects.get(username = sender)
         sendername = str(userObj.first_name) + ' ' + str(userObj.last_name)
         update_message =str(getmessage)
