@@ -499,7 +499,6 @@ def getgroupdetails(current_user):
     try:
         groups = AddGroup.objects.filter(admin = current_user.username)
         groupplan = GroupPlan.objects.get(customer = current_user.username)
-        print("YES")
         groupinfo = {}
         key = 1; anotherkey  = 11
         for group in groups:
@@ -515,8 +514,19 @@ def getgroupdetails(current_user):
         groupplaninfo = {}
         current_date = datetime.now().date()
         rechargedate = groupplan.recharge_on.date()
-        days = 30 - int((current_date - rechargedate).days)
-        noofgroups = int(groupplan.noofgroup)
+        
+        groupPlan = GroupPlan.objects.get(customer = current_user.username)
+        print("GROUP PLAN : ",(groupPlan.plantype))
+        if groupPlan.plantype == "3":
+            days = 30 - int((current_date - rechargedate).days)
+            noofgroups = "Infinity"
+        elif groupPlan.plantype == "4":
+            days = 365 - int((current_date - rechargedate).days)
+            noofgroups = "Infinity"
+        else:
+            days = 30 - int((current_date - rechargedate).days)
+            noofgroups = int(groupplan.noofgroup)
+       
         groupplaninfo[days] = noofgroups
         bundle[anotherkey] = groupinfo; anotherkey += 1
         bundle[anotherkey] = groupplaninfo
@@ -639,7 +649,7 @@ class CreatePagesFormView(View):
     def post(self, request):
         current_user = request.user
         commercial_user = CommercialUser.objects.get(user=current_user)
-        print(commercial_user.statusofrequest)
+       
         if commercial_user.statusofrequest == 2:
             if commercial_user.subscription_paid == True:
                 username = commercial_user.user.username
@@ -837,7 +847,7 @@ class EditProfileFormView(View):
                     dob = form.cleaned_data['date_of_birth']
                     phone = form.cleaned_data['phone']
                     updateExistingUser(current_user, first_name, last_name, dob, phone)
-                    return HttpResponseRedirect('')
+                    return redirect('commercial_user:editprofile')
                 return render(request, self.template_name, {'form':form}) 
 
         elif casual_user.statusofrequest == 1 or casual_user.statusofrequest == 4: #pending, not validated yet
@@ -1308,7 +1318,7 @@ class ListGroupView(View):
                     try:
                         
                         if request.POST.dict()[str(keyl)] == "join":
-                            # print("Button pressed : ", request.POST.dict()[str(keyl)])
+                        
                             admin = groupadminusernamel; name = groupnamel
 
                             wallet = Wallet.objects.get(username=username)
@@ -1324,8 +1334,8 @@ class ListGroupView(View):
                                     group.members.append(username); group.save()
                                     #bundle update
                                     statusl = 2
-                                    # return render(request, self.template_name, {'bundle': bundle})
-                                    return HttpResponseRedirect(reverse('commercial_user:listgroup'))
+                                    
+                                    return redirect('commercial_user:listgroup')
                                 except:
                                     group = GroupRequest()
                                     group.admin = admin ; group.name = name
@@ -1334,12 +1344,12 @@ class ListGroupView(View):
                                     group.members.append(username); group.save()
                                     #bundle update
                                     statusl = 2
-                                    return HttpResponseRedirect(reverse('commercial_user:listgroup'))
-                                
+                                   
+                                    
+                                    return redirect('commercial_user:listgroup')
                             else:
                                 #message.info NOT WORKING (but not a problem, code working fine)
                                 messages.info(request, 'Please recharge.')
-                                # return render(request, self.template_name, {'bundle': bundle})
                                 return HttpResponseRedirect(reverse('commercial_user:listgroup'))
 
                         elif request.POST.dict()[str(keyl)] == "leave":
@@ -1348,10 +1358,13 @@ class ListGroupView(View):
                             group.members.remove(username)
                             group.save()
                             statusl = 1
-                            return HttpResponseRedirect(reverse('commercial_user:listgroup'))
+                            
+                            return redirect('commercial_user:listgroup')
+                            # return HttpResponseRedirect(reverse('commercial_user:listgroup'))
                     except:
                         pass
-                return HttpResponseRedirect(reverse('commercial_user:listgroup'))
+                return redirect('commercial_user:listgroup')
+                # return HttpResponseRedirect(reverse('commercial_user:listgroup'))
             else:
                 return redirect('commercial_user:addmoneytosubscribe')
 
@@ -1649,7 +1662,6 @@ class DeleteGroupView(View):
                 for group in bundle:
                     try:
                         if request.POST.dict()[str(group)] == "Delete":
-                            print("Selected day : ",request.POST.dict()[str(group)])
                             groupobj = Group.objects.get(admin = current_user.username)
                             groupobj.group_list.remove(group); groupobj.save()
                             addgroupObj = AddGroup.objects.get(admin = current_user.username, name = group)
@@ -2107,10 +2119,7 @@ class OTPVerificationFormView(View):
     def get(self, request):
         current_user = request.user
         commercial_user = CommercialUser.objects.get(user=current_user)
-        # print(commercial_user.statusofrequest)
-        # print(type(commercial_user.statusofrequest))
         if commercial_user.statusofrequest == 2:
-            # print(commercial_user.subscription_paid)
             if commercial_user.subscription_paid == True:
                 form = self.form_class(None)
                 return render(request, self.template_name, {'form': form})
@@ -2220,6 +2229,7 @@ def getalluserlist(username1):
     try:
         allusername = []
         all_user = User.objects.all()
+        all_user = all_user.exclude(username = str(username1))
         for i in all_user:
             allusername.append(i.username)
     except:
@@ -2248,7 +2258,7 @@ class InboxView(View):
         if c_user.statusofrequest == 2:
             if c_user.subscription_paid == True:
                 username1 = current_user.username
-                friendlist = getfriendlist(username1)
+                friendlist = getalluserlist(username1)
                 current_user = dict()
                     
                 userinfo=dict()
@@ -2280,7 +2290,7 @@ class InboxView(View):
         if c_user.statusofrequest == 2:
             if c_user.subscription_paid == True:
                 username1 = current_user.username
-                friendlist = getfriendlist(username1)
+                friendlist = getalluserlist(username1)
                 
                 for i in friendlist:
                     try:
